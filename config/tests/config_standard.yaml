@@ -1,0 +1,86 @@
+#*** Traffic Classification Config for nmeta
+#*** Written in YAML
+#
+#*** max bytes of new flow packets to send to controller:
+miss_send_len: 1500
+#
+#*** Tell switch how to handle fragments (see OpenFlow spec)
+ofpc_frag: 0
+#
+#========== SYSLOG ==================================
+#*** Set to 1 if want to log to syslog:
+syslog_enabled: 1
+#
+#*** Where to send syslog (use localhost to keep on-box):
+loghost: localhost
+#
+#*** Port number to send on:
+logport: 514
+#
+#*** Facility to use:
+logfacility: 19
+#
+#*** Syslog Log Format:
+syslog_format: "sev=%(levelname)s module=%(name)s func=%(funcName)s %(message)s"
+#
+#*** Syslog Logging Levels Per Module
+#*** Values can be one of CRITICAL|ERROR|WARNING|INFO|DEBUG:
+nmeta_logging_level_s: INFO
+sa_logging_level_s: INFO
+api_logging_level_s: INFO
+tc_policy_logging_level_s: INFO
+#
+#========== CONSOLE LOGGING =========================
+#*** Set to 1 if want to log to console:
+console_log_enabled: 1
+#
+#*** Console Log Format:
+console_format: "%(levelname)s: %(name)s %(funcName)s: %(message)s"
+#
+#*** Console Logging Levels Per Module
+#*** Values can be one of CRITICAL|ERROR|WARNING|INFO|DEBUG:
+nmeta_logging_level_c: DEBUG
+sa_logging_level_c: DEBUG
+api_logging_level_c: DEBUG
+tc_policy_logging_level_c: DEBUG
+#
+#========== Flow Table Ids =============================
+# Don't change these, just here for a matter of record:
+#*** Identity Indicator (General):
+ft_iig: 0
+#*** Identity Indicator (MAC):
+ft_iim: 1
+#*** Traffic Classification Filter:
+ft_tcf: 2
+#*** Traffic Classification:
+ft_tc: 3
+#*** Traffic Treatment:
+ft_tt: 4
+#*** Forwarding:
+ft_fwd: 5
+#
+#========== Mongodb Database ==========================
+mongo_addr: localhost
+mongo_port: 27017
+#
+#========== Context ===================================
+context_default: 1
+#
+#========== Traffic Classification (TC) Policy ========
+config_directory: config
+tc_policy_filename: main_policy.yaml
+#
+#========== DPAE Registration Parameters ==============
+#*** Data Path Auxiliary Engine (DPAE) parameters used
+#***  for registration packets. MAC Addresses:
+dpae2ctrl_mac: 02:6e:6d:65:74:62
+ctrl2dpae_mac: 02:6e:6d:65:74:61
+#*** Ethertype in decimal:
+dpae_ethertype: 8267
+#
+#========== MAC Address Idle Timeouts =================
+#*** Maximum idle time for flow entries in seconds.
+#***  First is for identity indicator table and second
+#***  is for MAC forwarding table:
+mac_iim_idle_timeout: 300
+mac_fwd_idle_timeout: 300
