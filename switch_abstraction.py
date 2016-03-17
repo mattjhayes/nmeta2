@@ -263,6 +263,7 @@ class FlowTables(object):
         self.ft_tc = self._config.get_value("ft_tc")
         self.ft_tt = self._config.get_value("ft_tt")
         self.ft_fwd = self._config.get_value("ft_fwd")
+        self.ft_group_dpae = self._config.get_value("ft_group_dpae")
         #*** MAC aging:
         self.mac_iim_idle_timeout = \
                             self._config.get_value("mac_iim_idle_timeout")
@@ -554,7 +555,7 @@ class FlowTables(object):
         parser = self.datapath.ofproto_parser
         #*** Priority needs to be greater than 0:
         priority = 1
-        #*** DNS (a FE each for source and destination UDP 53):
+        #*** UDP DNS (a FE each for source and destination UDP 53):
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_src=53)
         actions = [parser.OFPActionOutput(out_port)]
         inst = [parser.OFPInstructionActions(
@@ -562,8 +563,8 @@ class FlowTables(object):
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
-        self.logger.debug("Installing DNS src port to DPAE flow in dpid=%s "
-                            "via port=%s", self.dpid, out_port)
+        self.logger.debug("Installing DNS UDP src port to DPAE flow in dpid=%s"
+                            " via port=%s", self.dpid, out_port)
         self.datapath.send_msg(mod)
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_dst=53)
         actions = [parser.OFPActionOutput(out_port)]
@@ -572,8 +573,29 @@ class FlowTables(object):
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
-        self.logger.debug("Installing DNS dst port to DPAE flow in dpid=%s "
-                            "via port=%s", self.dpid, out_port)
+        self.logger.debug("Installing DNS UDP dst port to DPAE flow in dpid=%s"
+                            " via port=%s", self.dpid, out_port)
+        self.datapath.send_msg(mod)
+        #*** TCP DNS (a FE each for source and destination TCP 53):
+        match = parser.OFPMatch(eth_type=0x0800, ip_proto=6, tcp_src=53)
+        actions = [parser.OFPActionOutput(out_port)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_iig + 1)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
+                            priority=priority, match=match, instructions=inst)
+        self.logger.debug("Installing DNS TCP src port to DPAE flow in dpid=%s"
+                            " via port=%s", self.dpid, out_port)
+        self.datapath.send_msg(mod)
+        match = parser.OFPMatch(eth_type=0x0800, ip_proto=6, tcp_dst=53)
+        actions = [parser.OFPActionOutput(out_port)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_iig + 1)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
+                            priority=priority, match=match, instructions=inst)
+        self.logger.debug("Installing DNS TCP dst port to DPAE flow in dpid=%s"
+                            " via port=%s", self.dpid, out_port)
         self.datapath.send_msg(mod)
 
     def add_fe_tc_static(self, tc_flows):
@@ -774,6 +796,38 @@ class FlowTables(object):
         #*** Install to switch:
         self.logger.debug("Installing id match dst mac=%s to dpid=%s",
                                                 id_mac, self.dpid)
+        self.datapath.send_msg(mod)
+        return 1
+
+    def add_group_dpae(self, out_port):
+        """
+        Add Group Table to the switch for forwarding packets to
+        DPAE out a specific port.
+        Note, will generate error if group table already exists.
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+
+        #*** Group Flow Table ID, from config:
+        group_id = self.ft_group_dpae
+
+        #*** Set the actions:
+        actions = [parser.OFPActionOutput(out_port)]
+
+        #*** Set up the bucket:
+        weight = 100
+        watch_port = 0
+        watch_group = 0
+        buckets = [parser.OFPBucket(weight, watch_port, watch_group,
+                                    actions)]
+
+        #*** Build request:
+        mod = parser.OFPGroupMod(self.datapath, ofproto.OFPGC_ADD,
+                                 ofproto.OFPGT_INDIRECT, group_id, buckets)
+
+        #*** Install to switch:
+        self.logger.debug("Installing group table id=%s to send to DPAE "
+                                "via port=%s", group_id, out_port)
         self.datapath.send_msg(mod)
         return 1
 

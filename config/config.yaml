@@ -58,6 +58,8 @@ ft_tc: 3
 ft_tt: 4
 #*** Forwarding:
 ft_fwd: 5
+#*** Group for DPAE:
+ft_group_dpae: 1
 #
 #========== Mongodb Database ==========================
 mongo_addr: localhost
@@ -84,4 +86,3 @@ dpae_ethertype: 8267
 #***  is for MAC forwarding table:
 mac_iim_idle_timeout: 300
 mac_fwd_idle_timeout: 300
-

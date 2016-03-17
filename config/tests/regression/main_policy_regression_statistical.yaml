@@ -11,7 +11,7 @@ tc_policies:
 tc_rules:
     # Traffic Classification Rulesets and Rules
     tc_ruleset_1:
-        - comment: Constrained Bandwidth Traffic (Identity)
+        - comment: Constrained Bandwidth Traffic (Statistical)
           match_type: any
           conditions_list:
               - match_type: any

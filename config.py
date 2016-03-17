@@ -57,6 +57,7 @@ CONFIG_TEMPLATE = \
     'ft_tc': 3,
     'ft_tt': 4,
     'ft_fwd': 5,
+    'ft_group_dpae': 1,
     'mongo_addr': 'localhost',
     'mongo_port': 27017,
     'context_default': 1,

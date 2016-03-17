@@ -420,6 +420,11 @@ class Nmeta(app_manager.RyuApp):
                             datapath.id, out_port)
         switch = self.switches[datapath.id]
 
+        #*** Set up group table to send to DPAE:
+        # NEEDS OVS 2.1 OR HIGHER SO COMMENTED OUT FOR THE MOMENT
+        # ALSO NEEDS CODE THAT CAN CATER FOR MULTIPLE DPAE
+        #switch.flowtables.add_group_dpae(out_port)
+
         if self.tc_policy.get_policy_id_value('lldp') == 1:
             #*** Install FEs to send LLDP Identity indicators to DPAE:
             switch.flowtables.add_fe_ii_lldp(out_port)
