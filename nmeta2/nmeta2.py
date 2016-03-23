@@ -368,6 +368,9 @@ class Nmeta(app_manager.RyuApp):
         self.logger.debug("Learned mac=%s dpid=%s port=%s",
                                eth.src, datapath.id, in_port)
 
+        #*** Add to MAC/port pair to switch MAC table:
+        switch.mactable.add(eth.src, in_port, context)
+
         #*** Add source MAC / in port to Identity Indicator (MAC) table so
         #***  that we don't get further packet in events for this combo:
         switch.flowtables.add_fe_iim_macport_src(in_port, eth.src)
@@ -375,11 +378,6 @@ class Nmeta(app_manager.RyuApp):
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
-
-        #*** Record in database:
-        dbidmac_doc = {'dpid': datapath.id, 'mac': eth.src, 'port': in_port,
-                         'context': context}
-        db_id = self.dbidmac.insert_one(dbidmac_doc).inserted_id
 
         #*** Don't do a packet out, as it continued through the pipeline...
 
@@ -543,9 +541,12 @@ class Nmeta(app_manager.RyuApp):
         Process a Traffic Classification advice message from a DPAE
         that relates to an identity
         """
-        #*** Look up source mac to get a port number:
-        port_number = self.switches[dpid].mac2port(dpid, src_mac)
         switch = self.switches[dpid]
+        #*** Look up source mac to get a port number:
+        port_number = switch.mactable.mac2port(src_mac)
+
+        #*** TBD, handle return value for port not found...
+
         if tc_subtype == 'lldp':
             #*** Check to see if we already know this identity:
             db_data = {'id_type': tc_subtype,

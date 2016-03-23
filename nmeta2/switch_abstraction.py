@@ -35,6 +35,9 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4, ipv6
 from ryu.lib.packet import tcp
 
+#*** Constant to use for a port not found value:
+PORT_NOT_FOUND = 999999999
+
 class Switches(object):
     """
     This class provides an abstraction for a set of OpenFlow
@@ -132,6 +135,9 @@ class Switch(object):
         #*** Instantiate a class that represents flow tables:
         self.flowtables = FlowTables(self._nmeta, self.logger, self._config,
                                             datapath)
+        #*** Instantiate a class that represents the MAC table:
+        self.mactable = MACTable(self._nmeta, self.logger, self._config,
+                                            datapath)
 
     def request_switch_desc(self):
         """
@@ -170,31 +176,6 @@ class Switch(object):
                     exc_type, exc_value, exc_traceback)
             return 0
         return 1
-
-    def mac2port(self, dpid, mac):
-        """
-        Passed a dpid and mac address and return the switch port number
-        that this mac has been learned via
-        (or 999999999 if unknown)
-        """
-        nmeta = self._nmeta
-        #*** Retrieve first matching record:
-        db_result = nmeta.dbidmac.find_one({'dpid': dpid, 'mac': mac})
-        if db_result:
-            if not 'dpid' in db_result:
-                self.logger.error("DB record didn't have a dpid...???")
-                return 999999999
-            dpid = db_result['dpid']
-            if not 'port' in db_result:
-                self.logger.error("DB record didn't have a port...???")
-                return 999999999
-            port = db_result['port']
-            self.logger.debug("Found mac=%s on dpid=%s port=%s",
-                                        mac, dpid, port)
-            return port
-        else:
-            self.logger.info("Unknown mac=%s for dpid=%s", mac, self.dpid)
-        return 999999999
 
     def get_friendly_of_version(self, ofproto):
         """
@@ -242,6 +223,65 @@ class Switch(object):
                                     dpid, out_port)
         #*** Tell the switch to send the packet:
         self.datapath.send_msg(out)
+
+class MACTable(object):
+    """
+    This class provides an abstraction for the MAC table on
+    an OpenFlow Switch that maps MAC addresses to switch ports
+    """
+
+    def __init__(self, _nmeta, logger, _config, datapath):
+        self._nmeta = _nmeta
+        self.logger = logger
+        self.datapath = datapath
+        self.dpid = datapath.id
+        self._config = _config
+        self.parser = datapath.ofproto_parser
+
+    def add(self, mac, in_port, context):
+        """
+        Passed a MAC address and the switch port it was learnt
+        via along with a context. Add this to the database and
+        tidy up by removing any other entries for this MAC on
+        this switch in given context.
+        """
+        nmeta = self._nmeta
+        dpid = self.dpid
+        #*** Check if MAC known in database for this switch/context:
+        # TBD:
+
+        #*** Record in database:
+        self.logger.debug("Adding MAC/port to DB: dpid=%s mac=%s port=%s "
+                            "context=%s", dpid, mac, in_port, context)
+        dbidmac_doc = {'dpid': dpid, 'mac': mac, 'port': in_port,
+                         'context': context}
+        db_id = nmeta.dbidmac.insert_one(dbidmac_doc).inserted_id
+
+    def mac2port(self, mac):
+        """
+        Passed a dpid and mac address and return the switch port number
+        that this mac has been learned via
+        (or 999999999 if unknown)
+        """
+        nmeta = self._nmeta
+        dpid = self.dpid
+        #*** Retrieve first matching record:
+        db_result = nmeta.dbidmac.find_one({'dpid': dpid, 'mac': mac})
+        if db_result:
+            if not 'dpid' in db_result:
+                self.logger.error("DB record didn't have a dpid...???")
+                return PORT_NOT_FOUND
+            dpid = db_result['dpid']
+            if not 'port' in db_result:
+                self.logger.error("DB record didn't have a port...???")
+                return PORT_NOT_FOUND
+            port = db_result['port']
+            self.logger.debug("Found mac=%s on dpid=%s port=%s",
+                                        mac, dpid, port)
+            return port
+        else:
+            self.logger.info("Unknown mac=%s for dpid=%s", mac, self.dpid)
+        return PORT_NOT_FOUND
 
 class FlowTables(object):
     """
