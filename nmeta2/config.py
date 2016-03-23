@@ -67,7 +67,7 @@ CONFIG_TEMPLATE = \
     'ctrl2dpae_mac': '02:6e:6d:65:74:61',
     'dpae_ethertype': '8267',
     'mac_iim_idle_timeout': 300,
-    'mac_fwd_idle_timeout': 300
+    'mac_fwd_idle_timeout': 0
 }
 
 class Config(object):

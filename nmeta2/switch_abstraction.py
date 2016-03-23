@@ -854,6 +854,14 @@ class FlowTables(object):
             fe_matches['eth_type'] = 2048
         return fe_matches
 
+    def delete_fe(self, match, flow_table_id):
+        """
+        Delete a specific FE from a specific Flow Table on
+        this switch
+        """
+        #*** TBD:
+        pass
+
     def delete_all_flows(self):
         """
         Delete all Flow Entries from all Flow Tables on

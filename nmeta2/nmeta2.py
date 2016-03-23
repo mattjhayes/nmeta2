@@ -333,6 +333,16 @@ class Nmeta(app_manager.RyuApp):
                               msg.idle_timeout, msg.hard_timeout,
                               msg.packet_count, msg.byte_count, msg.match)
 
+        if msg.table_id == self.ft_iim:
+            #*** Flow entries that age out of IIM table need to remove entry
+            #***  from FWD table for that MAC:
+            self.logger.debug("FE removed from IIM table. Will delete "
+                                    "equivalent forwarding FE")
+            #match=OFPMatch(oxm_fields={'eth_src': '08:00:27:c8:db:91', 'in_port': 2})
+            #NEED TO REFORMAT, TAKE MAC FROM IT AND PUT INTO FWD MATCH...
+
+
+
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         """
