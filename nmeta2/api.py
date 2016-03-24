@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#*** nmeta - Network Metadata - REST API Class and Methods
+#*** nmeta2 - Network Metadata - REST API Class and Methods
 
 """
 This module is part of the nmeta suite running on top of Ryu SDN

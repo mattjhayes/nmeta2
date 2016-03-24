@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#*** nmeta - Network Metadata - Abstractions of Controller for OpenFlow Calls
+#*** nmeta2 - Network Metadata - Abstractions of Controller for OpenFlow Calls
 
 """
 This module is part of the nmeta suite running on top of Ryu SDN controller.
@@ -247,8 +247,15 @@ class MACTable(object):
         """
         nmeta = self._nmeta
         dpid = self.dpid
+
         #*** Check if MAC known in database for this switch/context:
-        # TBD:
+        db_result = nmeta.dbidmac.find_one({'dpid': dpid, 'mac': mac,
+                                                    'context': context})
+        if db_result and db_result['port'] != in_port:
+            #*** We've learnt MAC via a different port so need to update:
+            self.logger.debug("MAC/port formerly known as: dpid=%s mac=%s "
+                            "port=%s context=%s", dpid, mac, in_port, context)
+            # TBD
 
         #*** Record in database:
         self.logger.debug("Adding MAC/port to DB: dpid=%s mac=%s port=%s "

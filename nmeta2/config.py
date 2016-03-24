@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#*** nmeta - Network Metadata - Configuration file loading and access to values
+#*** nmeta2 - Network Metadata - Configuration file loading and access
+#***  to values
 
 """
 This module is part of the nmeta suite running on top of the

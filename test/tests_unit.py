@@ -9,6 +9,12 @@ To run test, type in:
 
 """
 
+#*** Handle tests being in different directory branch to app code:
+import sys
+#import os
+sys.path.insert(0, '../nmeta2')
+#sys.path.insert(0, os.path.abspath('.'))
+
 #*** Testing imports:
 import mock
 import unittest
@@ -29,6 +35,7 @@ import json
 from json import JSONEncoder
 
 #*** nmeta2 imports:
+import nmeta2
 import switch_abstraction
 import config
 import api
@@ -38,7 +45,10 @@ _config = config.Config()
 
 #======================== tc_policy.py Unit Tests ============================
 #*** Instantiate class:
-switches = switch_abstraction.Switches(_config)
+wsgi_app = WSGIApplication()
+nmeta = nmeta2.Nmeta(wsgi=wsgi_app)
+
+switches = switch_abstraction.Switches(nmeta, _config)
 
 sock_mock = mock.Mock()
 addr_mock = mock.Mock()
