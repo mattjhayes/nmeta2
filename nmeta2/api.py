@@ -575,6 +575,15 @@ class RESTAPIController(ControllerBase):
             #*** Call a function to process the identity classification
             #***  advice:
             nmeta.tc_advice_id(dpid, tc_type, tc_subtype, src_mac, detail1)
+        elif tc_type == 'treatment+suppress':
+            #*** Do traffic treatment and flow suppression:
+            self.logger.debug("type=treatment+suppress")
+            #*** TBD:
+
+        elif tc_type == 'suppress':
+            #*** Do flow suppression:
+            self.logger.debug("type=suppress")
+            #*** TBD:
 
         else:
             self.logger.info("Didn't action tc_type=%s", tc_type)

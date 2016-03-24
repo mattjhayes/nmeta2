@@ -540,8 +540,7 @@ class FlowTables(object):
         match = parser.OFPMatch(eth_type=0x88CC)
         actions = [parser.OFPActionOutput(out_port)]
         inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_iig + 1)]
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing LLDP to DPAE flow in dpid=%s via port"
