@@ -542,8 +542,10 @@ class Nmeta(app_manager.RyuApp):
         that relates to an identity
         """
         switch = self.switches[dpid]
+        #*** TBD, deal with context:
+        context = self.context_default
         #*** Look up source mac to get a port number:
-        port_number = switch.mactable.mac2port(src_mac)
+        port_number = switch.mactable.mac2port(src_mac, context)
 
         #*** TBD, handle return value for port not found...
 

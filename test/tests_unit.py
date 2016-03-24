@@ -11,9 +11,9 @@ To run test, type in:
 
 #*** Handle tests being in different directory branch to app code:
 import sys
-#import os
+
 sys.path.insert(0, '../nmeta2')
-#sys.path.insert(0, os.path.abspath('.'))
+
 
 #*** Testing imports:
 import mock
@@ -65,6 +65,36 @@ def test_switches():
 
         #*** Look up by DPID:
         assert switches.datapath(datapath.id) == datapath
+
+        _switch_test(switches[datapath.id])
+
+def _switch_test(switch):
+    """
+    Test cases for a switch
+    """
+    #*** Constant to use for a port not found value:
+    PORT_NOT_FOUND = 999999999
+
+    #*** Test values:
+    mac123 = '00:00:00:00:01:23'
+    port123 = 123
+    context1 = 1
+
+    mac456 = '00:00:00:00:04:56'
+    port456 = 456
+    context2 = 2
+
+    #*** Add to MAC/port pairs to switch MAC table:
+    switch.mactable.add(mac123, port123, context1)
+    switch.mactable.add(mac456, port456, context2)
+
+    #*** Check that we can find mac/in_port:
+    assert switch.mactable.mac2port(mac123, context1) == port123
+    assert switch.mactable.mac2port(mac456, context2) == port456
+
+    #*** Check that we can't find mac/in_port:
+    assert switch.mactable.mac2port(mac123, context2) == PORT_NOT_FOUND
+    assert switch.mactable.mac2port(mac456, context1) == PORT_NOT_FOUND
 
 #======================== api.py Unit Tests ============================
 

@@ -264,7 +264,7 @@ class MACTable(object):
                          'context': context}
         db_id = nmeta.dbidmac.insert_one(dbidmac_doc).inserted_id
 
-    def mac2port(self, mac):
+    def mac2port(self, mac, context):
         """
         Passed a dpid and mac address and return the switch port number
         that this mac has been learned via
@@ -273,7 +273,8 @@ class MACTable(object):
         nmeta = self._nmeta
         dpid = self.dpid
         #*** Retrieve first matching record:
-        db_result = nmeta.dbidmac.find_one({'dpid': dpid, 'mac': mac})
+        db_result = nmeta.dbidmac.find_one({'dpid': dpid, 'mac': mac,
+                                                'context': context})
         if db_result:
             if not 'dpid' in db_result:
                 self.logger.error("DB record didn't have a dpid...???")
@@ -282,12 +283,18 @@ class MACTable(object):
             if not 'port' in db_result:
                 self.logger.error("DB record didn't have a port...???")
                 return PORT_NOT_FOUND
+            if not 'context' in db_result:
+                self.logger.error("DB record didn't have a context...???")
+                return PORT_NOT_FOUND
+            if db_result['context'] != context:
+                return PORT_NOT_FOUND
             port = db_result['port']
-            self.logger.debug("Found mac=%s on dpid=%s port=%s",
-                                        mac, dpid, port)
+            self.logger.debug("Found mac=%s on dpid=%s port=%s context=%s",
+                                        mac, dpid, port, context)
             return port
         else:
-            self.logger.info("Unknown mac=%s for dpid=%s", mac, self.dpid)
+            self.logger.info("Unknown mac=%s for dpid=%s context=%s", mac,
+                                        self.dpid, context)
         return PORT_NOT_FOUND
 
 class FlowTables(object):
