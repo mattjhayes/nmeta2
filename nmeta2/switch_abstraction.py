@@ -323,6 +323,8 @@ class FlowTables(object):
                             self._config.get_value("mac_iim_idle_timeout")
         self.mac_fwd_idle_timeout = \
                             self._config.get_value("mac_fwd_idle_timeout")
+        #*** Timeout for FEs suppressing traffic sending to DPAE:
+        self.suppress_idle_timeout = _config.get_value("suppress_idle_timeout")
 
     def add_fe_dpae_join(self):
         """
@@ -381,6 +383,67 @@ class FlowTables(object):
                         parser.OFPInstructionGotoTable(self.ft_iim + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iim,
                                 priority=0, match=match, instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_tcf_suppress(self, suppress_dict):
+        """
+        Process a Traffic Classification flow suppression request
+        from a DPAE, where it has requested that we don't send any
+        more packets to it for a specific flow. Installs an FE to
+        switch for each direction of the flow to bypass sending to DPAE.
+        .
+        Only supports IPv4 and TCP at this stage.
+        .
+        """
+        # TEMP:
+        self.logger.debug("in add_fe_tcf_suppress")
+
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        #*** Check it's TCP:
+        if suppress_dict['proto'] != 'tcp':
+            self.logger.error("Unsupported proto=%s", suppress_dict['proto'])
+            return 0
+        #*** Convert IP addresses strings to integers:
+        ipv4_src = _ipv4_t2i(suppress_dict['ip_A'])
+        ipv4_dst = _ipv4_t2i(suppress_dict['ip_B'])
+
+        # TEMP:
+        self.logger.debug("ipv4_src=%s", ipv4_src)
+
+        #*** Build match:
+        match = parser.OFPMatch(eth_type=0x0800,
+                    ipv4_src=ipv4_src,
+                    ipv4_dst=ipv4_dst,
+                    ip_proto=6,
+                    tcp_src=suppress_dict['tp_A'],
+                    tcp_dst=suppress_dict['tp_B']
+                    )
+        actions = []
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_tcf + 2)]
+        #*** Needs higher priority than TC rules in same table:
+        priority = 2
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tcf,
+                            priority=priority,
+                            idle_timeout=self.suppress_idle_timeout,
+                            match=match, instructions=inst)
+        self.logger.debug("Installing suppress forward FE dpid=%s", self.dpid)
+        self.datapath.send_msg(mod)
+        #*** Build counter match (reversed flow):
+        match = parser.OFPMatch(eth_type=0x0800,
+                    ipv4_src=ipv4_dst,
+                    ipv4_dst=ipv4_src,
+                    ip_proto=6,
+                    tcp_src=suppress_dict['tp_B'],
+                    tcp_dst=suppress_dict['tp_A']
+                    )
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tcf,
+                            priority=priority,
+                            idle_timeout=self.suppress_idle_timeout,
+                            match=match, instructions=inst)
+        self.logger.debug("Installing suppress reverse FE dpid=%s", self.dpid)
         self.datapath.send_msg(mod)
 
     def add_fe_tcf_accepts(self):
@@ -942,3 +1005,15 @@ class FlowTables(object):
                 self.dpid, exc_type, exc_value, exc_traceback)
             return 0
         return 1
+
+#=============== Private functions:
+
+def _ipv4_t2i(ip_text):
+    """
+    Turns an IPv4 address in text format into an integer.
+    Borrowed from rest_router.py code
+    """
+    if ip_text == 0:
+        return ip_text
+    assert isinstance(ip_text, str)
+    return struct.unpack('!I', addrconv.ipv4.text_to_bin(ip_text))[0]

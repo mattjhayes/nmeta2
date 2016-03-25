@@ -80,7 +80,7 @@ ctrl2dpae_mac: 02:6e:6d:65:74:61
 #*** Ethertype in decimal:
 dpae_ethertype: 8267
 #
-#========== MAC Address Idle Timeouts =================
+#========== Flow Entry Idle Timeouts =================
 #*** Maximum idle time for flow entries in seconds.
 #***  First is for identity indicator table and second
 #***  is for MAC forwarding table:
@@ -88,3 +88,8 @@ mac_iim_idle_timeout: 300
 #*** Don't timeout the forwarding as it can be shadowed. Stale entries are
 #***  removed by other means:
 mac_fwd_idle_timeout: 0
+#
+#*** Timeout for an FE that suppresses sending a specific
+#*** flow to a DPAE. Can be relatively low value as should
+#*** stay fresh due to traffic while flow is live
+suppress_idle_timeout: 5

@@ -540,53 +540,61 @@ class RESTAPIController(ControllerBase):
         self.logger.debug("TC advice body=%s",
                                     dpae_req_body.json)
 
-        #*** Validate that some required fields are in body:
+        #*** Validate required keys are present in JSON:
+        if not dpae_req_body.validate(['type',
+                    'subtype']):
+            self.logger.error("Validation error %s", dpae_req_body.error)
+            return ({'status': 400, 'msg': dpae_req_body.error})
+
         tc_type = dpae_req_body[u'type']
-        if not tc_type:
-            return ({'status': 400, 'msg': '{\"Error\": \"No type in body\"}'})
         tc_subtype = dpae_req_body[u'subtype']
-        if not tc_subtype:
-            return ({'status': 400, \
-                                'msg': '{\"Error\": \"No subtype in body\"}'})
 
         #*** Look up the UUID in the database:
         db_result = nmeta.dbdpae.find_one({'_id': str(uri_uuid)})
         if not db_result:
             #*** Not in database:
             return ({'status': 400, 'msg': '{\"Error\": \"UUID not in DB\"}'})
+        #*** Retrieve the datapath for this switch from the database:
+        if 'dpid' in db_result:
+            dpid = db_result[u'dpid']
+        else:
+            return ({'status': 500, 'msg': '{\"Error\": \"no dpid\"}'})
 
         if tc_type == 'id':
             #*** Identity Metadata. Get fields out and update ID database:
+            if not dpae_req_body.validate(['src_mac', 'detail1']):
+                self.logger.error("Validation error %s", dpae_req_body.error)
+                return ({'status': 400, 'msg': dpae_req_body.error})
             src_mac = dpae_req_body[u'src_mac']
-            if not src_mac:
-                return ({'status': 400, \
-                                'msg': '{\"Error\": \"No src_mac in body\"}'})
             detail1 = dpae_req_body[u'detail1']
-            if not detail1:
-                return ({'status': 400, \
-                                'msg': '{\"Error\": \"No detail1 in body\"}'})
-
-            #*** Retrieve the datapath for this switch from the database:
-            if 'dpid' in db_result:
-                dpid = db_result[u'dpid']
-            else:
-                return ({'status': 500, 'msg': '{\"Error\": \"no dpid\"}'})
-
             #*** Call a function to process the identity classification
             #***  advice:
             nmeta.tc_advice_id(dpid, tc_type, tc_subtype, src_mac, detail1)
-        elif tc_type == 'treatment+suppress':
-            #*** Do traffic treatment and flow suppression:
-            self.logger.debug("type=treatment+suppress")
-            #*** TBD:
 
-        elif tc_type == 'suppress':
-            #*** Do flow suppression:
-            self.logger.debug("type=suppress")
-            #*** TBD:
+        elif tc_type == 'treatment+suppress' or tc_type == 'suppress':
+            #*** Do flow suppression. Validate fields exist and extract:
+            suppress_dict = {}
+            if not dpae_req_body.validate(['ip_A', 'ip_B', 'proto', 'tp_A',
+                                                'tp_B', 'flow_packets']):
+                self.logger.error("Validation error %s", dpae_req_body.error)
+                return ({'status': 400, 'msg': dpae_req_body.error})
+            suppress_dict['ip_A'] = dpae_req_body[u'ip_A']
+            suppress_dict['ip_B'] = dpae_req_body[u'ip_B']
+            suppress_dict['proto'] = dpae_req_body[u'proto']
+            suppress_dict['tp_A'] = dpae_req_body[u'tp_A']
+            suppress_dict['tp_B'] = dpae_req_body[u'tp_B']
+            self.logger.debug("DPAE flow suppression type=%s packets_seen=%s",
+                            tc_type, dpae_req_body[u'flow_packets'])
+            nmeta.switches[dpid].flowtables.add_fe_tcf_suppress(suppress_dict)
 
         else:
             self.logger.info("Didn't action tc_type=%s", tc_type)
+
+        if tc_type == 'treatment+suppress' or tc_type == 'treatment':
+            #*** Do traffic treatment:
+            #*** TBD
+            self.logger.debug("TBD, traffic treatment...")
+            pass
 
         result = {'msg': 'Thanks for letting us know!'}
         return result
