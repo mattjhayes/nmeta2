@@ -69,7 +69,8 @@ CONFIG_TEMPLATE = \
     'dpae_ethertype': '8267',
     'mac_iim_idle_timeout': 300,
     'mac_fwd_idle_timeout': 0,
-    'suppress_idle_timeout' : 5
+    'suppress_idle_timeout' : 5,
+    'fe_idle_timeout_qos': 30
 }
 
 class Config(object):

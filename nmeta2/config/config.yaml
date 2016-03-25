@@ -93,4 +93,8 @@ mac_fwd_idle_timeout: 0
 #*** flow to a DPAE. Can be relatively low value as should
 #*** stay fresh due to traffic while flow is live
 suppress_idle_timeout: 5
+#
+#*** Timeout for a dynamic QoS treatment FE:
+fe_idle_timeout_qos: 30
+
 

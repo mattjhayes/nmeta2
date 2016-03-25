@@ -325,6 +325,8 @@ class FlowTables(object):
                             self._config.get_value("mac_fwd_idle_timeout")
         #*** Timeout for FEs suppressing traffic sending to DPAE:
         self.suppress_idle_timeout = _config.get_value("suppress_idle_timeout")
+        #*** Timeout for a dynamic QoS treatment FE:
+        self.fe_idle_timeout_qos = _config.get_value("fe_idle_timeout_qos")
 
     def add_fe_dpae_join(self):
         """
@@ -385,11 +387,70 @@ class FlowTables(object):
                                 priority=0, match=match, instructions=inst)
         self.datapath.send_msg(mod)
 
+    def add_fe_tt_advised(self, flow_dict):
+        """
+        Process a Traffic Classification flow treatment advice
+        from a DPAE. Install an FE to switch for each direction
+        of the flow applying the appropriate treatment.
+        .
+        Only supports IPv4 and TCP at this stage.
+        .
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        #*** Check it's TCP:
+        if flow_dict['proto'] != 'tcp':
+            self.logger.error("Unsupported proto=%s", flow_dict['proto'])
+            return 0
+
+        #*** Convert IP addresses strings to integers:
+        ipv4_src = _ipv4_t2i(str(flow_dict['ip_A']))
+        ipv4_dst = _ipv4_t2i(str(flow_dict['ip_B']))
+
+        #*** Build match:
+        match = parser.OFPMatch(eth_type=0x0800,
+                    ipv4_src=ipv4_src,
+                    ipv4_dst=ipv4_dst,
+                    ip_proto=6,
+                    tcp_src=flow_dict['tp_A'],
+                    tcp_dst=flow_dict['tp_B']
+                    )
+
+        #*** TBD, set QoS actions:
+        actions = []
+
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_tt + 1)]
+        priority = 1
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tt,
+                            priority=priority,
+                            idle_timeout=self.fe_idle_timeout_qos,
+                            match=match, instructions=inst)
+        self.logger.debug("Installing dynamic treatment forward FE dpid=%s",
+                                    self.dpid)
+        self.datapath.send_msg(mod)
+        #*** Build counter match (reversed flow):
+        match = parser.OFPMatch(eth_type=0x0800,
+                    ipv4_src=ipv4_dst,
+                    ipv4_dst=ipv4_src,
+                    ip_proto=6,
+                    tcp_src=flow_dict['tp_B'],
+                    tcp_dst=flow_dict['tp_A']
+                    )
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tt,
+                            priority=priority,
+                            idle_timeout=self.fe_idle_timeout_qos,
+                            match=match, instructions=inst)
+        self.logger.debug("Installing dynamic treatment reverse FE dpid=%s",
+                                        self.dpid)
+        self.datapath.send_msg(mod)
+
     def add_fe_tcf_suppress(self, suppress_dict):
         """
         Process a Traffic Classification flow suppression request
         from a DPAE, where it has requested that we don't send any
-        more packets to it for a specific flow. Installs an FE to
+        more packets to it for a specific flow. Install an FE to
         switch for each direction of the flow to bypass sending to DPAE.
         .
         Only supports IPv4 and TCP at this stage.

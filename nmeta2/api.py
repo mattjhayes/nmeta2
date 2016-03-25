@@ -571,30 +571,36 @@ class RESTAPIController(ControllerBase):
             #***  advice:
             nmeta.tc_advice_id(dpid, tc_type, tc_subtype, src_mac, detail1)
 
-        elif tc_type == 'treatment+suppress' or tc_type == 'suppress':
-            #*** Do flow suppression. Validate fields exist and extract:
-            suppress_dict = {}
+        elif tc_type == 'treatment+suppress' or tc_type == 'suppress' \
+                    or tc_type == 'treatment':
+            #*** Validate fields exist and extract:
+            flow_dict = {}
             if not dpae_req_body.validate(['ip_A', 'ip_B', 'proto', 'tp_A',
                                                 'tp_B', 'flow_packets']):
                 self.logger.error("Validation error %s", dpae_req_body.error)
                 return ({'status': 400, 'msg': dpae_req_body.error})
-            suppress_dict['ip_A'] = dpae_req_body[u'ip_A']
-            suppress_dict['ip_B'] = dpae_req_body[u'ip_B']
-            suppress_dict['proto'] = dpae_req_body[u'proto']
-            suppress_dict['tp_A'] = dpae_req_body[u'tp_A']
-            suppress_dict['tp_B'] = dpae_req_body[u'tp_B']
-            self.logger.debug("DPAE flow suppression type=%s packets_seen=%s",
+            flow_dict['ip_A'] = dpae_req_body[u'ip_A']
+            flow_dict['ip_B'] = dpae_req_body[u'ip_B']
+            flow_dict['proto'] = dpae_req_body[u'proto']
+            flow_dict['tp_A'] = dpae_req_body[u'tp_A']
+            flow_dict['tp_B'] = dpae_req_body[u'tp_B']
+
+            if tc_type == 'treatment+suppress' or tc_type == 'suppress':
+                #*** Do flow suppression.
+                self.logger.debug("DPAE flow suppression type=%s "
+                            "packets_seen=%s",
                             tc_type, dpae_req_body[u'flow_packets'])
-            nmeta.switches[dpid].flowtables.add_fe_tcf_suppress(suppress_dict)
+                nmeta.switches[dpid].flowtables.add_fe_tcf_suppress(flow_dict)
+
+            if tc_type == 'treatment+suppress' or tc_type == 'treatment':
+                #*** Do traffic treatment.
+                self.logger.debug("Traffic treatment type=%s "
+                            "packets_seen=%s",
+                            tc_type, dpae_req_body[u'flow_packets'])
+                nmeta.switches[dpid].flowtables.add_fe_tt_advised(flow_dict)
 
         else:
             self.logger.info("Didn't action tc_type=%s", tc_type)
-
-        if tc_type == 'treatment+suppress' or tc_type == 'treatment':
-            #*** Do traffic treatment:
-            #*** TBD
-            self.logger.debug("TBD, traffic treatment...")
-            pass
 
         result = {'msg': 'Thanks for letting us know!'}
         return result
