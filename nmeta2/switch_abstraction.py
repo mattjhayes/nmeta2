@@ -395,21 +395,16 @@ class FlowTables(object):
         Only supports IPv4 and TCP at this stage.
         .
         """
-        # TEMP:
-        self.logger.debug("in add_fe_tcf_suppress")
-
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
         #*** Check it's TCP:
         if suppress_dict['proto'] != 'tcp':
             self.logger.error("Unsupported proto=%s", suppress_dict['proto'])
             return 0
-        #*** Convert IP addresses strings to integers:
-        ipv4_src = _ipv4_t2i(suppress_dict['ip_A'])
-        ipv4_dst = _ipv4_t2i(suppress_dict['ip_B'])
 
-        # TEMP:
-        self.logger.debug("ipv4_src=%s", ipv4_src)
+        #*** Convert IP addresses strings to integers:
+        ipv4_src = _ipv4_t2i(str(suppress_dict['ip_A']))
+        ipv4_dst = _ipv4_t2i(str(suppress_dict['ip_B']))
 
         #*** Build match:
         match = parser.OFPMatch(eth_type=0x0800,
