@@ -203,6 +203,16 @@ class TCPolicy(object):
             return 0
         return self.tc_policy_yaml['identity'][id_key]
 
+    def get_policy_qos_treatment_value(self, qos_key):
+        """
+        Return a value for a given key under the 'qos_treatment' root of
+        the policy
+        """
+        if not id_key in QOS_TREATMENT_KEYS:
+            self.logger.error("The key %s is not valid", id_key)
+            return 0
+        return self.tc_policy_yaml['qos_treatment'][qos_key]
+
     def get_tc_ports(self, dpid):
         """
         Passed a DPID and return a tuple of port numbers on which to

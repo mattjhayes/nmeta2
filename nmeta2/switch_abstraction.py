@@ -417,7 +417,22 @@ class FlowTables(object):
                     )
 
         #*** TBD, set QoS actions:
-        actions = []
+        #actions = {'set_qos_tag': "QoS_treatment=constrained_bw"}
+        queue = 0
+        self.logger.debug("flow_dict=%s", flow_dict)
+        actions_dict = flow_dict['actions']
+        if 'set_qos_tag' in actions_dict:
+            qos_treatment = actions_dict['set_qos_tag']
+            self.logger.debug("qos_treatment=%s", qos_treatment)
+            qos_treatment_fields = qos_treatment.split('=')
+            qtv = qos_treatment_fields[1]
+            self.logger.debug("qos_treatment_value=%s", qtv)
+            queue = self._nmeta.tc_policy.get_policy_qos_treatment_value(qtv)
+            self.logger.debug("queue=%s", queue)
+        if queue:
+            actions = [parser.OFPActionSetQueue(queue)]
+        else:
+            actions = []
 
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
@@ -900,7 +915,7 @@ class FlowTables(object):
                                         fe_match_list['action'])
                     elif id_match_type == 'identity_lldp_systemname_re':
                         #*** Check regular expression match:
-                        if (re.match(fe_matches[id_match_type], id_detail)):
+                        if re.match(fe_matches[id_match_type], id_detail):
                             self.logger.debug("RE match on %s == %s",
                                         fe_matches[id_match_type], id_detail)
                             #*** Now, install flow to switch...
