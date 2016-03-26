@@ -96,5 +96,3 @@ suppress_idle_timeout: 5
 #
 #*** Timeout for a dynamic QoS treatment FE:
 fe_idle_timeout_qos: 30
-
-
