@@ -202,7 +202,7 @@ class RESTAPIController(ControllerBase):
         #*** Return response body for sending to DPAE
         #***  Include the location, which is branch where resource is created:
         result = {'msg': json_create_response, 'location': str(our_uuid)}
-        return(result)
+        return result
 
     @rest_command
     def rest_dpae_read(self, req, **kwargs):
@@ -254,16 +254,16 @@ class RESTAPIController(ControllerBase):
 
         #*** Validate that parameters in HTTP GET JSON match DB:
         if not hostname_dpae == str(db_result[u'hostname_dpae']):
-                return ({'status': 400, 'msg': \
+            return ({'status': 400, 'msg': \
                       '{\"Error\": \"hostname_dpae mismatch with DB value\"}'})
         if not uuid_dpae == str(db_result[u'uuid_dpae']):
-                return ({'status': 400, 'msg': \
+            return ({'status': 400, 'msg': \
                       '{\"Error\": \"uuid_dpae mismatch with DB value\"}'})
         if not uuid_controller == str(db_result['_id']):
-                return ({'status': 400, 'msg': \
+            return ({'status': 400, 'msg': \
                     '{\"Error\": \"uuid_controller mismatch with DB value\"}'})
         if not if_name == str(db_result[u'if_name']):
-                return ({'status': 400, 'msg': \
+            return ({'status': 400, 'msg': \
                     '{\"Error\": \"if_name mismatch with DB value\"}'})
 
         #*** Just return fields from DB doc that we want to return:
@@ -289,7 +289,7 @@ class RESTAPIController(ControllerBase):
 
         #*** Return response body for sending to DPAE:
         result = {'msg': json_read_response}
-        return(result)
+        return result
 
     @rest_command
     def rest_dpae_keepalive(self, req, uri_uuid, **kwargs):
@@ -341,7 +341,7 @@ class RESTAPIController(ControllerBase):
 
         #*** Return response body for sending to DPAE:
         result = {'msg': 'Okay, got that'}
-        return(result)
+        return result
 
     @rest_command
     def rest_dpae_delete(self, req, **kwargs):
@@ -576,14 +576,22 @@ class RESTAPIController(ControllerBase):
             #*** Validate fields exist and extract:
             flow_dict = {}
             if not dpae_req_body.validate(['ip_A', 'ip_B', 'proto', 'tp_A',
-                                                'tp_B', 'flow_packets']):
+                                                'tp_B', 'flow_packets',
+                                                'actions']):
                 self.logger.error("Validation error %s", dpae_req_body.error)
                 return ({'status': 400, 'msg': dpae_req_body.error})
+
+            # TEMP
+            self.logger.debug("about to assign values to flow_dict")
+
             flow_dict['ip_A'] = dpae_req_body[u'ip_A']
             flow_dict['ip_B'] = dpae_req_body[u'ip_B']
             flow_dict['proto'] = dpae_req_body[u'proto']
             flow_dict['tp_A'] = dpae_req_body[u'tp_A']
             flow_dict['tp_B'] = dpae_req_body[u'tp_B']
+            flow_dict['actions'] = dpae_req_body[u'actions']
+            if dpae_req_body.validate(['qos_treatment']):
+                flow_dict['qos_treatment'] = dpae_req_body[u'qos_treatment']
 
             if tc_type == 'treatment+suppress' or tc_type == 'suppress':
                 #*** Do flow suppression.

@@ -416,18 +416,14 @@ class FlowTables(object):
                     tcp_dst=flow_dict['tp_B']
                     )
 
-        #*** TBD, set QoS actions:
-        #actions = {'set_qos_tag': "QoS_treatment=constrained_bw"}
+        #*** Set QoS actions (if any):
         queue = 0
         self.logger.debug("flow_dict=%s", flow_dict)
-        actions_dict = flow_dict['actions']
-        if 'set_qos_tag' in actions_dict:
-            qos_treatment = actions_dict['set_qos_tag']
-            self.logger.debug("qos_treatment=%s", qos_treatment)
-            qos_treatment_fields = qos_treatment.split('=')
-            qtv = qos_treatment_fields[1]
-            self.logger.debug("qos_treatment_value=%s", qtv)
-            queue = self._nmeta.tc_policy.get_policy_qos_treatment_value(qtv)
+
+        if flow_dict['actions'] and 'qos_treatment' in flow_dict:
+            qos = flow_dict['qos_treatment']
+            self.logger.debug("qos_treatment=%s", qos)
+            queue = self._nmeta.tc_policy.get_policy_qos_treatment_value(qos)
             self.logger.debug("queue=%s", queue)
         if queue:
             actions = [parser.OFPActionSetQueue(queue)]
