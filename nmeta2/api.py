@@ -580,10 +580,6 @@ class RESTAPIController(ControllerBase):
                                                 'actions']):
                 self.logger.error("Validation error %s", dpae_req_body.error)
                 return ({'status': 400, 'msg': dpae_req_body.error})
-
-            # TEMP
-            self.logger.debug("about to assign values to flow_dict")
-
             flow_dict['ip_A'] = dpae_req_body[u'ip_A']
             flow_dict['ip_B'] = dpae_req_body[u'ip_B']
             flow_dict['proto'] = dpae_req_body[u'proto']

@@ -209,7 +209,7 @@ class TCPolicy(object):
         the policy
         """
         if not qos_key in QOS_TREATMENT_KEYS:
-            self.logger.error("The key %s is not valid", id_key)
+            self.logger.error("The key %s is not valid", qos_key)
             return 0
         return self.tc_policy_yaml['qos_treatment'][qos_key]
 
