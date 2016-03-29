@@ -40,6 +40,14 @@ Install Python YAML ("YAML Ain't Markup Language") for parsing config and policy
 sudo apt-get install python-yaml
 ```
 
+### Install simplejson
+```
+sudo pip install simplejson
+```
+
+### Install MongoDB
+Install MongoDB as per [their instructions](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/)
+
 ### Clone nmeta2
 Clone nmeta2:
 ```
