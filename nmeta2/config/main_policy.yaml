@@ -1,5 +1,4 @@
-#*** Main Policy for nmeta - Statistical Regression Control of Iperf
-
+#*** Main Policy for nmeta - NFPS Load Test
 #*** Written in YAML
 #
 tc_policies:
@@ -12,13 +11,23 @@ tc_policies:
 tc_rules:
     # Traffic Classification Rulesets and Rules
     tc_ruleset_1:
-        - comment: Control Static Rule that doesn't do anything
+        - comment: Constrained Bandwidth Traffic
           match_type: any
           conditions_list:
               - match_type: any
-                tcp_src: 123
+                tcp_src: 1234
+                tcp_dst: 1234
           actions:
-            set_desc: description="foo"
+            set_qos: constrained_bw
+            set_desc: description="Constrained Bandwidth Traffic"
+        - comment: Constrained Bandwidth Traffic (Statistical)
+          match_type: any
+          conditions_list:
+              - match_type: any
+                statistical: 'statistical_qos_bandwidth_1'
+          actions:
+            set_qos: classifier_return
+            set_desc: description="Statistical TC Control of Traffic QoS Treatment"
 #
 identity:
     # Control how identity information is collected
