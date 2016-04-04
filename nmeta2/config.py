@@ -63,7 +63,7 @@ CONFIG_TEMPLATE = \
     'mongo_port': 27017,
     'context_default': 1,
     'config_directory': 'config',
-    'tc_policy_filename': 'main_policy.yaml',
+    'main_policy_filename': 'main_policy.yaml',
     'dpae2ctrl_mac': '02:6e:6d:65:74:62',
     'ctrl2dpae_mac': '02:6e:6d:65:74:61',
     'dpae_ethertype': '8267',

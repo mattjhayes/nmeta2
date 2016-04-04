@@ -68,9 +68,9 @@ mongo_port: 27017
 #========== Context ===================================
 context_default: 1
 #
-#========== Traffic Classification (TC) Policy ========
+#================ Main Policy ========
 config_directory: config
-tc_policy_filename: main_policy.yaml
+main_policy_filename: main_policy.yaml
 #
 #========== DPAE Registration Parameters ==============
 #*** Data Path Auxiliary Engine (DPAE) parameters used
