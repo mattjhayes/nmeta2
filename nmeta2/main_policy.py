@@ -124,12 +124,13 @@ class MainPolicy(object):
         validate_keys(self.logger, self.main_policy.keys(), self.TOP_KEYS, '.')
 
         #*** Instantiate classes for the second levels of policy:
-        tc_policies = TCPolicies(self.logger, self.main_policy['tc_policies'])
-        tc_rules = TCRules(self.logger, self.main_policy['tc_rules'])
-        identity = Identity(self.logger, self.main_policy['identity'])
-        qos_treatment = QoSTreatment(self.logger,
-                                            self.main_policy['qos_treatment'])
-        port_sets = PortSets(self.logger, self.main_policy['port_sets'])
+        self.tc_policies = \
+                       TCPolicies(self.logger, self.main_policy['tc_policies'])
+        self.tc_rules = TCRules(self.logger, self.main_policy['tc_rules'])
+        self.identity = Identity(self.logger, self.main_policy['identity'])
+        self.qos_treatment = \
+                   QoSTreatment(self.logger, self.main_policy['qos_treatment'])
+        self.port_sets = PortSets(self.logger, self.main_policy['port_sets'])
 
 
         #*** Create a set of optimised rules that can be installed onto
@@ -158,6 +159,7 @@ class MainPolicy(object):
                               fullpathname, exception)
             sys.exit("Exiting nmeta. Please create traffic classification "
                              "policy file")
+
         return _main_policy
 
 class TCPolicies(object):

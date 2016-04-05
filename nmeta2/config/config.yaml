@@ -28,7 +28,7 @@ syslog_format: "sev=%(levelname)s module=%(name)s func=%(funcName)s %(message)s"
 nmeta_logging_level_s: INFO
 sa_logging_level_s: INFO
 api_logging_level_s: INFO
-tc_policy_logging_level_s: INFO
+main_policy_logging_level_s: INFO
 #
 #========== CONSOLE LOGGING =========================
 #*** Set to 1 if want to log to console:
@@ -42,7 +42,7 @@ console_format: "%(levelname)s: %(name)s %(funcName)s: %(message)s"
 nmeta_logging_level_c: DEBUG
 sa_logging_level_c: DEBUG
 api_logging_level_c: DEBUG
-tc_policy_logging_level_c: DEBUG
+main_policy_logging_level_c: DEBUG
 #
 #========== Flow Table Ids =============================
 # Don't change these, just here for a matter of record:

@@ -521,7 +521,7 @@ class FlowTables(object):
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
         self.logger.info("Adding ports to run TC on to dpid=%s", self.dpid)
-        tc_ports = self._nmeta.tc_policy.get_tc_ports(self.dpid)
+        tc_ports = self._nmeta.main_policy.port_sets.get_tc_ports(self.dpid)
         for port in tc_ports:
             match = parser.OFPMatch(in_port=port)
             actions = []
