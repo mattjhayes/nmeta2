@@ -46,16 +46,24 @@ class MainPolicy(object):
     to ingest the policy file main_policy.yaml and validate
     that it is correctly structured
     .
-    Directly accessible values:
-        main_policy            # main policy YAML object
+    Directly accessible values to read:
+        main_policy         # main policy YAML object
+        identity.arp        # True if identity arp harvest is enabled
+        identity.lldp       # True if identity lldp harvest is enabled
+        identity.dns        # True if identity dns harvest is enabled
+        identity.dhcp       # True if identity dhcp harvest is enabled
     .
     Methods:
         <TBD>
         tc_policies.*
         tc_rules.*
-        identity.get_policy_id_value(key)
+        identity.*
         qos_treatment.get_policy_qos_treatment_value(key)
-        port_sets.*
+        port_sets.get_tc_ports(dpid)
+
+    TBD:
+    optimised_rules
+
     """
 
     #*** Top level keys that must exist in the main policy:
@@ -167,6 +175,45 @@ class TCRules(object):
 
     def __init__(self, logger, policy):
         self.logger = logger
+        self.policy = policy
+
+        #*** Get the tc ruleset name, only one ruleset supported at this stage:
+        tc_rules_keys = list(self.policy.keys())
+        if not len(tc_rules_keys) == 1:
+            #*** Unsupported number of rulesets so log and exit:
+            self.logger.critical("Unsupported "
+                                    "number of tc rulesets. Should be 1 but "
+                                    "is %s", len(tc_rules_keys))
+            sys.exit("Exiting nmeta. Please fix error in "
+                             "main_policy.yaml file")
+        self.tc_ruleset_name = tc_rules_keys[0]
+        self.logger.debug("tc_ruleset_name=%s",
+                              self.tc_ruleset_name)
+
+        #*** Instantiate the rules as class objects:
+        self.tc_rules = []
+        for idx, tc_rule in enumerate(self.policy[self.tc_ruleset_name]):
+            self.logger.debug("Validating TC rule "
+                              "number=%s rule=%s", idx, tc_rule)
+            self.tc_rules.append(TCRule(self.logger, tc_rule))
+
+class TCRule(object):
+    """
+    Represents a TC rule
+    """
+
+    TC_RULE_ATTRIBUTES = ('comment',
+                            'match_type',
+                            'conditions_list',
+                            'actions')
+
+    def __init__(self, logger, rule):
+        self.logger = logger
+        self.rule = rule
+
+        #*** Validate the correct keys exist in this TC rule:
+        validate_keys(self.logger, rule.keys(), self.TC_RULE_ATTRIBUTES,
+                                                    'tc_rules.ruleset.rule')
 
 class Identity(object):
     """
@@ -184,16 +231,10 @@ class Identity(object):
         #*** Validate the correct keys exist in this branch of main policy:
         validate_keys(self.logger, policy.keys(), self.IDENTITY_KEYS,
                                                                'identity')
-
-    def get_policy_id_value(self, id_key):
-        """
-        Return a value for a given key under the 'identity' root of
-        the policy
-        """
-        if not id_key in self.IDENTITY_KEYS:
-            self.logger.error("The identity key %s is not valid", id_key)
-            return 0
-        return policy[id_key]
+        self.arp = policy['arp']
+        self.lldp = policy['lldp']
+        self.dns = policy['dns']
+        self.dhcp = policy['dhcp']
 
 class QoSTreatment(object):
     """
@@ -229,6 +270,34 @@ class PortSets(object):
 
     def __init__(self, logger, policy):
         self.logger = logger
+        self.policy = policy
+
+    def get_tc_ports(self, dpid):
+        """
+        Passed a DPID and return a tuple of port numbers on which to
+        run TC on that switch, or 0 if none
+        """
+        #*** TBD, this is hardcoded to this name, needs fixing:
+        port_set = self.policy['all_access_ports']
+
+        for switchdict in port_set:
+            switchdict2 = switchdict.itervalues().next()
+            if switchdict2['DPID'] == dpid:
+                ports = switchdict2['ports']
+                self.logger.debug("found ports=%s dpid=%s", ports, dpid)
+                #*** turn the ports spec into a list:
+                result = []
+                for part in ports.split(','):
+                    if '-' in part:
+                        a, b = part.split('-')
+                        a, b = int(a), int(b)
+                        result.extend(range(a, b + 1))
+                    else:
+                        a = int(part)
+                        result.append(a)
+        self.logger.debug("result is %s", result)
+        return result
+
 
 def validate_keys(logger, keys, schema, branch):
     """

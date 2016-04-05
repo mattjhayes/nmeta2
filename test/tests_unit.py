@@ -39,11 +39,12 @@ import nmeta2
 import switch_abstraction
 import config
 import api
+import main_policy
 
 #*** Instantiate Config class:
 _config = config.Config()
 
-#======================== tc_policy.py Unit Tests ============================
+#====================== switch_abstraction.py Unit Tests ======================
 #*** Instantiate class:
 wsgi_app = WSGIApplication()
 nmeta = nmeta2.Nmeta(wsgi=wsgi_app)
@@ -96,7 +97,7 @@ def _switch_test(switch):
     assert switch.mactable.mac2port(mac123, context2) == PORT_NOT_FOUND
     assert switch.mactable.mac2port(mac456, context1) == PORT_NOT_FOUND
 
-#======================== api.py Unit Tests ============================
+#============================ api.py Unit Tests ===============================
 
 class _TestController(ControllerBase):
 
@@ -128,3 +129,11 @@ def test_decode_JSON():
     bad = api.JSON_Body(bad_json)
     assert bad.json == {}
     assert bad.error == '{\"Error\": \"Bad JSON\"}'
+
+#======================= main_policy.py Unit Tests ============================
+policy = main_policy.MainPolicy(_config)
+
+#*** Test main policy ingestion:
+def test_policy():
+    #*** TBD
+    pass
