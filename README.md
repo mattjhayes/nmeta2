@@ -62,5 +62,8 @@ alias nm2="cd; cd ryu; PYTHONPATH=. ./bin/ryu-manager ../nmeta2/nmeta2/nmeta2.py
 alias nm2t="cd ~/nmeta2/test/; py.test tests_unit.py"
 ```
 
+## Test
+nm2t
+
 ## Run
 nm2
