@@ -284,7 +284,8 @@ class Nmeta(app_manager.RyuApp):
         switch.flowtables.add_fe_dpae_join()
 
         #*** Install non-DPAE static TC flows from optimised policy to switch:
-        switch.flowtables.add_fe_tc_static(self.main_policy.optimised_rules)
+        switch.flowtables.add_fe_tc_static \
+                              (self.main_policy.optimised_rules.get_rules())
 
         #*** Request the switch send us it's description:
         switch.request_switch_desc()

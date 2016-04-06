@@ -510,7 +510,7 @@ class RESTAPIController(ControllerBase):
         (HTTP GET method)
         """
         nmeta = self.nmeta_parent_self
-        _results = nmeta.tc_policy.get_policy()
+        _results = nmeta.main_policy.main_policy
         _results_dict = {'msg': _results}
         return _results_dict
 
@@ -521,7 +521,7 @@ class RESTAPIController(ControllerBase):
         (HTTP GET method)
         """
         nmeta = self.nmeta_parent_self
-        _results = nmeta.tc_policy.optimised_rules
+        _results = nmeta.main_policy.optimised_rules.get_rules()
         _results_dict = {'msg': _results}
         return _results_dict
 
