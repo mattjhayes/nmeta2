@@ -366,6 +366,7 @@ class Optimise(object):
             #*** Accumulate FEs into result list:
             for flow_entry in fe_match_list:
                 opt_rules.append(flow_entry)
+        self.logger.debug("Optimised rules are %s", opt_rules)
         return opt_rules
 
     def _opt_conditions_list(self, conditions_list):
@@ -386,7 +387,7 @@ class Optimise(object):
                 if tc_type != 'static' and tc_type != 'identity':
                     #*** Record that recourse to DPAE is required
                     dpae_required = 1
-                self.logger.debug("      condition=%s value=%s tc_type=%s",
+                self.logger.debug("condition=%s value=%s tc_type=%s",
                             condition, value, tc_type)
             else:
                 match_type = conditions_list[0]['match_type']

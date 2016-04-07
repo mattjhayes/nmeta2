@@ -151,3 +151,12 @@ class Config(object):
                                 "not exist", config_key)
             return 0
 
+    def set_value(self, config_key, config_value):
+        """
+        Passed a key and see if it exists in the config YAML. If it does
+        then set its value to the supplied value and return 1 otherwise 0
+        """
+        if config_key in self._config_yaml:
+            self._config_yaml[config_key] = config_value
+            return 1
+        return 0
