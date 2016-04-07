@@ -425,6 +425,7 @@ class Nmeta(app_manager.RyuApp):
         DPAE so that it can perform Traffic Classification analysis
         on them
         """
+        result = {}
         self.logger.info("Starting TC to DPAE on datapath=%s, out_port=%s",
                             datapath.id, out_port)
         switch = self.switches[datapath.id]
@@ -452,13 +453,15 @@ class Nmeta(app_manager.RyuApp):
 
         #*** Add any general TC flows to send to DPAE if required by policy
         #*** (i.e. statistical or payload):
-        switch.flowtables.add_fe_tc_dpae(self.main_policy.optimised_rules,
-                                                                out_port)
+        switch.flowtables.add_fe_tc_dpae(
+                        self.main_policy.optimised_rules.get_rules(), out_port)
 
         self.logger.info("TC started to DPAE on datapath=%s, out_port=%s",
                             datapath.id, out_port)
-
-        return "TC started"
+        result['status'] = 'tc_started'
+        result['mode'] = self.main_policy.tc_policies.mode
+        self.logger.debug("result=%s", result)
+        return result
 
     def dpae_join(self, pkt, datapath, in_port):
         """

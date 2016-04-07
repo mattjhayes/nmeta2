@@ -197,4 +197,44 @@ class TestMainPolicy(unittest.TestCase):
                             'condition': 'identity_lldp_systemname_re'}]
         assert policy.optimised_rules.get_rules() == good_result
 
+#================= Public function tests:
 
+#*** MAC Address Validity Tests:
+def test_is_valid_macaddress():
+    assert main_policy.is_valid_macaddress(logger, '192.168.3.4') == 0
+    assert main_policy.is_valid_macaddress(logger, 'fe80:dead:beef') == 1
+    assert main_policy.is_valid_macaddress(logger, 'fe80deadbeef') == 1
+    assert main_policy.is_valid_macaddress(logger, 'fe:80:de:ad:be:ef') == 1
+    assert main_policy.is_valid_macaddress(logger, 'foo 123') == 0
+
+#*** EtherType Validity Tests:
+def test_is_valid_ethertype():
+    assert main_policy.is_valid_ethertype(logger, '0x0800') == 1
+    assert main_policy.is_valid_ethertype(logger, 'foo') == 0
+    assert main_policy.is_valid_ethertype(logger, '0x08001') == 1
+    assert main_policy.is_valid_ethertype(logger, '0x18001') == 0
+    assert main_policy.is_valid_ethertype(logger, '35020') == 1
+    assert main_policy.is_valid_ethertype(logger, '350201') == 0
+
+#*** IP Address Space Validity Tests:
+def test_is_valid_ip_space():
+    assert main_policy.is_valid_ip_space(logger, '192.168.3.4') == 1
+    assert main_policy.is_valid_ip_space(logger, '192.168.3.0/24') == 1
+    assert main_policy.is_valid_ip_space(logger, '192.168.322.0/24') == 0
+    assert main_policy.is_valid_ip_space(logger, 'foo') == 0
+    assert main_policy.is_valid_ip_space(logger, '10.168.3.15/24') == 1
+    assert main_policy.is_valid_ip_space(logger, '192.168.3.25-192.168.4.58') == 1
+    assert main_policy.is_valid_ip_space(logger, '192.168.4.25-192.168.3.58') == 0
+    assert main_policy.is_valid_ip_space(logger, '192.168.3.25-43') == 0
+    assert main_policy.is_valid_ip_space(logger, 'fe80::dead:beef') == 1
+    assert main_policy.is_valid_ip_space(logger, '10.1.2.2-10.1.2.3') == 1
+    assert main_policy.is_valid_ip_space(logger, '10.1.2.3-fe80::dead:beef') == 0
+    assert main_policy.is_valid_ip_space(logger, '10.1.2.3-10.1.2.5-10.1.2.8') == 0
+    assert main_policy.is_valid_ip_space(logger, 'fe80::dead:beef-fe80::dead:beff') == 1
+
+#*** Transport Port Validity Tests:
+def test_is_valid_transport_port_abc123():
+    assert main_policy.is_valid_transport_port(logger, 'abc123') == 0
+    assert main_policy.is_valid_transport_port(logger, '1') == 1
+    assert main_policy.is_valid_transport_port(logger, '65535') == 1
+    assert main_policy.is_valid_transport_port(logger, '65536') == 0

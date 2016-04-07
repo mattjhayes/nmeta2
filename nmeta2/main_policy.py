@@ -48,6 +48,7 @@ class MainPolicy(object):
     .
     Directly accessible values to read:
         main_policy         # main policy YAML object
+        tc_policies.mode    # mode for DPAE connectivity
         identity.arp        # True if identity arp harvest is enabled
         identity.lldp       # True if identity lldp harvest is enabled
         identity.dns        # True if identity dns harvest is enabled
@@ -56,14 +57,11 @@ class MainPolicy(object):
     Methods:
         <TBD>
         tc_policies.*
-        tc_rules.get_optimised_rules()  # Optimised TC rules to install
+        tc_rules.*
         identity.*
         qos_treatment.get_policy_qos_treatment_value(key)
         port_sets.get_tc_ports(dpid)
         optimised_rules.get_rules()  # Optimised TC rules to install
-
-    TBD:
-    optimised_rules
 
     """
 
@@ -167,8 +165,42 @@ class TCPolicies(object):
     Represents the portion of main policy off the root key 'tc_policies'
     """
 
+    #*** Keys that must exist under 'identity' in the policy:
+    TC_POLICY_KEYS = ('comment',
+                    'rule_set',
+                    'port_set',
+                    'mode')
+
+    TC_POLICY_MODE_VALUES = ('active',
+                            'passive')
+
     def __init__(self, logger, policy):
         self.logger = logger
+        self.policy = policy
+
+        #*** Get the tc policy name, only one TC policy supported:
+        tc_policies_keys = list(self.policy.keys())
+        if not len(tc_policies_keys) == 1:
+            #*** Unsupported number of TC policies so log and exit:
+            self.logger.critical("Unsupported "
+                                    "number of tc policies. Should be 1 but "
+                                    "is %s", len(tc_policies_keys))
+            sys.exit("Exiting nmeta. Please fix error in "
+                             "main_policy.yaml file")
+        self.tc_policy_name = tc_policies_keys[0]
+        self.logger.debug("tc_policy_name=%s",
+                              self.tc_policy_name)
+
+        #*** Validate the correct keys exist in this branch of main policy:
+        validate_keys(self.logger, self.policy[self.tc_policy_name].keys(),
+                                self.TC_POLICY_KEYS, 'tc_policies')
+
+        self.mode = self.policy[self.tc_policy_name]['mode']
+
+        #*** Validate the correct value for key=mode:
+        validate_value(self.logger, 'mode',
+                                self.mode,
+                                self.TC_POLICY_MODE_VALUES, 'tc_policies')
 
 class TCRules(object):
     """
@@ -210,13 +242,148 @@ class TCRule(object):
                             'conditions_list',
                             'actions')
 
+    #*** Dictionary of valid conditions stanza attributes with type:
+    TC_CONFIG_CONDITIONS = {'eth_src': 'MACAddress',
+                               'eth_dst': 'MACAddress',
+                               'ip_src': 'IPAddressSpace',
+                               'ip_dst': 'IPAddressSpace',
+                               'tcp_src': 'PortNumber',
+                               'tcp_dst': 'PortNumber',
+                               'eth_type': 'EtherType',
+                               'identity_lldp_systemname': 'String',
+                               'identity_lldp_systemname_re': 'String',
+                               'identity_service_dns': 'String',
+                               'identity_service_dns_re': 'String',
+                               'payload_type': 'String',
+                               'statistical': 'String',
+                               'match_type': 'MatchType',
+                               'conditions_list': 'PolicyConditions'}
+
+    #*** Dictionary of valid match types:
+    TC_CONFIG_MATCH_TYPES = ('any',
+                         'all')
+
     def __init__(self, logger, rule):
         self.logger = logger
         self.rule = rule
 
         #*** Validate the correct keys exist in this TC rule:
-        validate_keys(self.logger, rule.keys(), self.TC_RULE_ATTRIBUTES,
+        validate_keys(self.logger, self.rule.keys(), self.TC_RULE_ATTRIBUTES,
                                                     'tc_rules.ruleset.rule')
+
+        #*** Validate conditions in rule:
+        for condition in self.rule['conditions_list']:
+            self._validate_conditions(condition)
+
+    def _validate_conditions(self, policy_conditions):
+        """
+        Check Traffic Classification (TC) conditions stanza to ensure
+        that it is in the correct format so that it won't cause unexpected
+        errors during packet checks. Can recurse for nested policy conditions.
+        """
+        #*** Use this to check if there is a match_type in stanza. Note can't
+        #*** check for more than one occurrence as dictionary will just
+        #*** keep attribute and overwrite value. Also note that recursive
+        #*** instances use same variable due to scoping:
+        self.has_match_type = 0
+        #*** Check conditions are valid:
+        for policy_condition in policy_conditions.keys():
+            #*** Check policy condition attribute is valid:
+            if not (policy_condition in self.TC_CONFIG_CONDITIONS or
+                     policy_condition[0:10] == 'conditions'):
+                self.logger.critical("The following PolicyCondition attribute"
+                " is invalid: %s", policy_condition)
+                sys.exit("Exiting nmeta. Please fix error in "
+                         "main_policy.yaml file")
+            #*** Check policy condition value is valid:
+            if not policy_condition[0:10] == 'conditions':
+                pc_value_type = self.TC_CONFIG_CONDITIONS[policy_condition]
+            else:
+                pc_value_type = policy_condition
+            pc_value = policy_conditions[policy_condition]
+            if pc_value_type == 'String':
+                #*** Can't think of a way it couldn't be a valid
+                #*** string???
+                pass
+            elif pc_value_type == 'PortNumber':
+                #*** Check is int 0 < x < 65536:
+                if not \
+                    is_valid_transport_port(self.logger, pc_value):
+                    self.logger.critical("The following "
+                          "PolicyCondition value is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+            elif pc_value_type == 'MACAddress':
+                #*** Check is valid MAC address:
+                if not is_valid_macaddress(self.logger, pc_value):
+                    self.logger.critical("The following "
+                          "PolicyCondition value is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+            elif pc_value_type == 'EtherType':
+                #*** Check is valid EtherType - must be two bytes
+                #*** as Hex (i.e. 0x0800 is IPv4):
+                if not is_valid_ethertype(self.logger, pc_value):
+                    self.logger.critical("The following "
+                          "PolicyCondition value is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+            elif pc_value_type == 'IPAddressSpace':
+                #*** Check is valid IP address, IPv4 or IPv6, can
+                #*** include range or CIDR mask:
+                if not is_valid_ip_space(self.logger, pc_value):
+                    self.logger.critical("The following "
+                          "PolicyCondition value is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+            elif pc_value_type == 'MatchType':
+                #*** Check is valid match type:
+                if not pc_value in self.TC_CONFIG_MATCH_TYPES:
+                    self.logger.critical("The following "
+                          "PolicyCondition value is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+                else:
+                    #*** Flag that we've seen a match_type so all is good:
+                    self.has_match_type = 1
+            elif pc_value_type == 'conditions_list':
+                #*** Check value is list:
+                if not isinstance(pc_value, list):
+                    self.logger.critical("A conditions_list clause "
+                          "specified but is invalid: %s "
+                          "as %s", policy_condition, pc_value)
+                    sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+                #*** Now, iterate through conditions list:
+                self.logger.debug("Iterating on "
+                                    "conditions_list=%s", pc_value)
+                for list_item in pc_value:
+                    keys = list_item.keys()
+                    name = keys[0]
+                    self._validate_conditions(list_item[name])
+            else:
+                #*** Whoops! We have a data type in the policy
+                #*** that we've forgot to code a check for...
+                self.logger.critical("The following "
+                          "PolicyCondition value does not have "
+                          "a check: %s, %s", policy_condition, pc_value)
+                sys.exit("Exiting nmeta. Coding error "
+                                        "in main_policy.yaml file")
+        #*** Check match_type attribute present:
+        if not self.has_match_type == 1:
+            #*** No match_type attribute in stanza:
+            self.logger.critical("Missing match_type attribute"
+                     " in stanza: %s ", policy_conditions)
+            sys.exit("Exiting nmeta. Please fix error "
+                                        "in main_policy.yaml file")
+        else:
+            #*** Reset to zero as otherwise can break parent evaluations:
+            self.has_match_type = 0
 
 class Identity(object):
     """
@@ -232,7 +399,7 @@ class Identity(object):
         self.logger = logger
         self.policy = policy
         #*** Validate the correct keys exist in this branch of main policy:
-        validate_keys(self.logger, policy.keys(), self.IDENTITY_KEYS,
+        validate_keys(self.logger, self.policy.keys(), self.IDENTITY_KEYS,
                                                                'identity')
         self.arp = policy['arp']
         self.lldp = policy['lldp']
@@ -507,16 +674,166 @@ def validate_keys(logger, keys, schema, branch):
     Validate a set of keys against a schema tuple to ensure that
     there are no missing or extraneous keys
     """
-    #*** validate that all required keys exist:
+    #*** validate that all keys are valid as per schema:
     for key in keys:
         if not key in schema:
-            logger.critical("Missing key % in main policy branch %s",
+            logger.critical("Invalid key=%s in level=%s of main policy",
                                         key, branch)
             sys.exit("Exiting nmeta. Please fix error in main_policy.yaml")
-    #*** Conversely, check all keys are valid:
+    #*** Conversely, check all required keys exist:
     for key in schema:
         if not key in keys:
-            logger.critical("Invalid key %s in level %s of main policy",
+            logger.critical("Missing key=%s in level=%s of main policy",
                                         key, branch)
             sys.exit("Exiting nmeta. Please fix error in main_policy.yaml")
+    return 1
+
+def validate_value(logger, key, value, schema, branch):
+    """
+    validate that the value complies with the schema
+    """
+    if not value in schema:
+        logger.critical("Invalid value=%s for key=%s in level=%s of "
+                    "main policy", value, key, branch)
+        sys.exit("Exiting nmeta. Please fix error in main_policy.yaml")
+        return 0
+    return 1
+
+#============= Public Functions =============================
+
+def is_valid_macaddress(logger, value_to_check):
+    """
+    Passed a prospective MAC address and check that
+    it is valid.
+    Return 1 for is valid IP address and 0 for not valid
+    """
+    try:
+        if not EUI(value_to_check):
+            logger.debug("MAC address %s is not valid", value_to_check)
+            return 0
+    except:
+        logger.debug("Check of MAC address %s raised an exception",
+                    value_to_check)
+        return 0
+    return 1
+
+def is_valid_ethertype(logger, value_to_check):
+    """
+    Passed a prospective EtherType and check that
+    it is valid. Can be hex (0x*) or decimal
+    Return 1 for is valid IP address and 0 for not valid
+    """
+    if value_to_check[:2] == '0x':
+        #*** Looks like hex:
+        try:
+            if not (int(value_to_check, 16) > 0 and \
+                               int(value_to_check, 16) < 65536):
+                logger.debug("Check of "
+                        "is_valid_ethertype as hex on %s returned false",
+                        value_to_check)
+                return 0
+        except:
+            logger.debug("Check of "
+                    "is_valid_ethertype as hex on %s raised an exception",
+                        value_to_check)
+            return 0
+    else:
+        #*** Perhaps it's decimal?
+        try:
+            if not (int(value_to_check) > 0 and \
+                                  int(value_to_check) < 65536):
+                logger.debug("Check of "
+                        "is_valid_ethertype as decimal on %s returned false",
+                        value_to_check)
+                return 0
+        except:
+            logger.debug("Check of "
+                    "is_valid_ethertype as decimal on %s raised an exception",
+                        value_to_check)
+            return 0
+    return 1
+
+def is_valid_ip_space(logger, value_to_check):
+    """
+    Passed a prospective IP address and check that
+    it is valid. Can be IPv4 or IPv6 and can be range or have CIDR mask
+    Return 1 for is valid IP address and 0 for not valid
+    """
+    #*** Does it look like a CIDR network?:
+    if "/" in value_to_check:
+        try:
+            if not IPNetwork(value_to_check):
+                logger.debug("Network check "
+                        "of is_valid_ip_space on %s returned false",
+                        value_to_check)
+                return 0
+        except:
+            logger.debug("Network check of "
+                    "is_valid_ip_space on %s raised an exception",
+                    value_to_check)
+            return 0
+        return 1
+    #*** Does it look like an IP range?:
+    elif "-" in value_to_check:
+        ip_range = value_to_check.split("-")
+        if len(ip_range) != 2:
+            logger.debug("Range check of "
+                    "is_valid_ip_space on %s failed as not 2 items in list",
+                    value_to_check)
+            return 0
+        try:
+            if not (IPAddress(ip_range[0]) and IPAddress(ip_range[1])):
+                logger.debug("Range check "
+                        "of is_valid_ip_space on %s returned false",
+                        value_to_check)
+                return 0
+        except:
+            logger.debug("Range check of "
+                    "is_valid_ip_space on %s raised an exception",
+                    value_to_check)
+            return 0
+        #*** Check second value in range greater than first value:
+        if IPAddress(ip_range[0]).value >= IPAddress(ip_range[1]).value:
+            logger.debug("Range check of "
+                    "is_valid_ip_space on %s failed as range is negative",
+                    value_to_check)
+            return 0
+        #*** Check both IP addresses are the same version:
+        if IPAddress(ip_range[0]).version != \
+                                 IPAddress(ip_range[1]).version:
+            logger.debug("Range check of "
+                    "is_valid_ip_space on %s failed as IP versions are "
+                    "different", value_to_check)
+            return 0
+        return 1
+    else:
+        #*** Or is it just a plain simple IP address?:
+        try:
+            if not IPAddress(value_to_check):
+                logger.debug("Check of "
+                        "is_valid_ip_space on %s returned false",
+                        value_to_check)
+                return 0
+        except:
+            logger.debug("Check of "
+                    "is_valid_ip_space on %s raised an exception",
+                    value_to_check)
+            return 0
+    return 1
+
+def is_valid_transport_port(logger, value_to_check):
+    """
+    Passed a logger ref and prospective TCP or UDP port number and
+    check that it is an integer in the correct range.
+    Return 1 for is valid port number and 0 for not valid port
+    number
+    """
+    try:
+        if not (int(value_to_check) > 0 and int(value_to_check) < 65536):
+            logger.debug("transport port %s is not valid", value_to_check)
+            return 0
+    except:
+        logger.debug("Check of transport port %s raised an exception",
+                value_to_check)
+        return 0
     return 1
