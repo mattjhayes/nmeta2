@@ -48,21 +48,28 @@ class MainPolicy(object):
     .
     Directly accessible values to read:
         main_policy         # main policy YAML object
-        tc_policies.mode    # mode for DPAE connectivity
+        tc_policies.mode    # mode for DPAE connectivity (active or passive)
         identity.arp        # True if identity arp harvest is enabled
         identity.lldp       # True if identity lldp harvest is enabled
         identity.dns        # True if identity dns harvest is enabled
         identity.dhcp       # True if identity dhcp harvest is enabled
-    .
+
     Methods:
         <TBD>
         tc_policies.*
         tc_rules.*
         identity.*
         qos_treatment.get_policy_qos_treatment_value(key)
-        port_sets.get_tc_ports(dpid)
-        optimised_rules.get_rules()  # Optimised TC rules to install
+        port_sets.get_tc_ports(dpid) # Get ports for a DPID to run TC on
+        optimised_rules.get_rules()  # Get optimised TC rules to install
 
+    Public Functions:
+        validate_keys(logger, keys, schema, branch)
+        validate_value(logger, key, value, schema, branch)
+        is_valid_macaddress(logger, value_to_check)
+        is_valid_ethertype(logger, value_to_check)
+        is_valid_ip_space(logger, value_to_check)
+        is_valid_transport_port(logger, value_to_check)
     """
 
     #*** Top level keys that must exist in the main policy:

@@ -78,6 +78,10 @@ class Nmeta(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(Nmeta, self).__init__(*args, **kwargs)
+
+        #*** Version number for compatibility checks:
+        self.version = '0.2.0'
+
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
         self.config = config.Config()
@@ -425,7 +429,6 @@ class Nmeta(app_manager.RyuApp):
         DPAE so that it can perform Traffic Classification analysis
         on them
         """
-        result = {}
         self.logger.info("Starting TC to DPAE on datapath=%s, out_port=%s",
                             datapath.id, out_port)
         switch = self.switches[datapath.id]
@@ -458,10 +461,9 @@ class Nmeta(app_manager.RyuApp):
 
         self.logger.info("TC started to DPAE on datapath=%s, out_port=%s",
                             datapath.id, out_port)
-        result['status'] = 'tc_started'
-        result['mode'] = self.main_policy.tc_policies.mode
-        self.logger.debug("result=%s", result)
-        return result
+        _results = {"status": "tc_started",
+                        "mode": self.main_policy.tc_policies.mode}
+        return _results
 
     def dpae_join(self, pkt, datapath, in_port):
         """
@@ -567,7 +569,7 @@ class Nmeta(app_manager.RyuApp):
                             "node_name=%s", tc_subtype, detail1)
                 #*** Check to see if we need to add a flow to switch:
                 switch.flowtables.add_fe_tc_id(tc_subtype, detail1, src_mac,
-                                                self.main_policy.optimised_rules)
+                                  self.main_policy.optimised_rules.get_rules())
             else:
                 #*** Just update the last_seen field:
                 db_result = self.dbdpae.update_one(
