@@ -464,6 +464,12 @@ class RESTAPIController(ControllerBase):
             self.logger.error("Validation error %s", dpae_req_body.error)
             return ({'status': 400, 'msg': dpae_req_body.error})
 
+        #*** Check version compatibility:
+        if dpae_req_body['dpae_version'] != nmeta.version:
+            self.logger.error("Incompatible DPAE version=%s",
+                                dpae_req_body['dpae_version'])
+            return ({'status': 400, 'msg': '{\"Error\": \"Bad Version\"}'})
+
         #*** Check what state is being set (we only support 'run'):
         tc_state = dpae_req_body['tc_state']
         if tc_state:
