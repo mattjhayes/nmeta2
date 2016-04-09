@@ -57,7 +57,7 @@ from ryu.app.wsgi import WSGIApplication
 import config
 import switch_abstraction
 import api
-import tc_policy
+import main_policy
 import of_error_decode
 
 #*** JSON imports:
@@ -78,6 +78,10 @@ class Nmeta(app_manager.RyuApp):
 
     def __init__(self, *args, **kwargs):
         super(Nmeta, self).__init__(*args, **kwargs)
+
+        #*** Version number for compatibility checks:
+        self.version = '0.2.0'
+
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
         self.config = config.Config()
@@ -166,7 +170,7 @@ class Nmeta(app_manager.RyuApp):
         self.switches = switch_abstraction.Switches(self, self.config)
         wsgi = kwargs['wsgi']
         self.api = api.Api(self, self.config, wsgi)
-        self.tc_policy = tc_policy.TCPolicy(self.config)
+        self.main_policy = main_policy.MainPolicy(self.config)
 
         #*** Start mongodb:
         self.logger.info("Connecting to mongodb database...")
@@ -272,6 +276,7 @@ class Nmeta(app_manager.RyuApp):
         switch.set_switch_config(self.ofpc_frag, self.miss_send_len)
 
         #*** Set up switch flow table basics:
+        switch.flowtables.add_fe_iig_broadcast()
         switch.flowtables.add_fe_iig_miss()
         switch.flowtables.add_fe_iim_miss()
         switch.flowtables.add_fe_tcf_accepts()
@@ -281,10 +286,11 @@ class Nmeta(app_manager.RyuApp):
         switch.flowtables.add_fe_fwd_miss()
 
         #*** Set flow entry for DPAE join packets:
-        switch.flowtables.add_fe_dpae_join()
+        switch.flowtables.add_fe_iig_dpae_join()
 
         #*** Install non-DPAE static TC flows from optimised policy to switch:
-        switch.flowtables.add_fe_tc_static(self.tc_policy.optimised_rules)
+        switch.flowtables.add_fe_tc_static \
+                              (self.main_policy.optimised_rules.get_rules())
 
         #*** Request the switch send us it's description:
         switch.request_switch_desc()
@@ -418,46 +424,55 @@ class Nmeta(app_manager.RyuApp):
         else:
             self.logger.info("Illegal port state %s %s", port_no, reason)
 
-    def tc_start(self, datapath, out_port):
+    def tc_start(self, datapath, dpae_port):
         """
         Add a Flow Entry to switch to clone selected packets to a
         DPAE so that it can perform Traffic Classification analysis
         on them
         """
-        self.logger.info("Starting TC to DPAE on datapath=%s, out_port=%s",
-                            datapath.id, out_port)
+        self.logger.info("Starting TC to DPAE on datapath=%s, dpae_port=%s",
+                            datapath.id, dpae_port)
         switch = self.switches[datapath.id]
+        #*** Check if Active or Passive TC Mode:
+        mode = self.main_policy.tc_policies.mode
 
         #*** Set up group table to send to DPAE:
         # NEEDS OVS 2.1 OR HIGHER SO COMMENTED OUT FOR THE MOMENT
         # ALSO NEEDS CODE THAT CAN CATER FOR MULTIPLE DPAE
         #switch.flowtables.add_group_dpae(out_port)
 
-        if self.tc_policy.get_policy_id_value('lldp') == 1:
+        if self.main_policy.identity.lldp:
             #*** Install FEs to send LLDP Identity indicators to DPAE:
-            switch.flowtables.add_fe_ii_lldp(out_port)
+            switch.flowtables.add_fe_iig_lldp(dpae_port)
 
-        if self.tc_policy.get_policy_id_value('dhcp') == 1:
+        if self.main_policy.identity.dhcp:
             #*** Install FEs to send DHCP Identity indicators to DPAE:
-            switch.flowtables.add_fe_ii_dhcp(out_port)
+            switch.flowtables.add_fe_iig_dhcp(dpae_port)
 
-        if self.tc_policy.get_policy_id_value('arp') == 1:
+        if self.main_policy.identity.arp:
             #*** Install FEs to send ARP Identity indicators to DPAE:
-            switch.flowtables.add_fe_ii_arp(out_port)
+            switch.flowtables.add_fe_iig_arp(dpae_port)
 
-        if self.tc_policy.get_policy_id_value('dns') == 1:
+        if self.main_policy.identity.dns:
             #*** Install FEs to send DNS Identity indicators to DPAE:
-            switch.flowtables.add_fe_ii_dns(out_port)
+            switch.flowtables.add_fe_iig_dns(dpae_port)
+
+        if mode == 'active':
+            #*** Install FE to so packets returning from DPAE in active mode
+            #*** bypass learning tables and go straight to treatment:
+            switch.flowtables.add_fe_iig_dpae_active_bypass(dpae_port)
 
         #*** Add any general TC flows to send to DPAE if required by policy
         #*** (i.e. statistical or payload):
-        switch.flowtables.add_fe_tc_dpae(self.tc_policy.optimised_rules,
-                                                                out_port)
+        switch.flowtables.add_fe_tc_dpae(
+                        self.main_policy.optimised_rules.get_rules(),
+                        dpae_port, mode)
 
-        self.logger.info("TC started to DPAE on datapath=%s, out_port=%s",
-                            datapath.id, out_port)
-
-        return "TC started"
+        self.logger.info("TC started to DPAE on datapath=%s, dpae_port=%s",
+                            datapath.id, dpae_port)
+        _results = {"status": "tc_started",
+                        "mode": mode}
+        return _results
 
     def dpae_join(self, pkt, datapath, in_port):
         """
@@ -563,7 +578,7 @@ class Nmeta(app_manager.RyuApp):
                             "node_name=%s", tc_subtype, detail1)
                 #*** Check to see if we need to add a flow to switch:
                 switch.flowtables.add_fe_tc_id(tc_subtype, detail1, src_mac,
-                                                self.tc_policy.optimised_rules)
+                                  self.main_policy.optimised_rules.get_rules())
             else:
                 #*** Just update the last_seen field:
                 db_result = self.dbdpae.update_one(

@@ -454,8 +454,21 @@ class RESTAPIController(ControllerBase):
         dpae_req_body = JSON_Body(req.body)
         if dpae_req_body.error:
             return ({'status': 400, 'msg': dpae_req_body.error})
+
         self.logger.debug("DPAE TC State update request body=%s",
                                     dpae_req_body.json)
+
+        #*** Validate required keys are present in JSON:
+        if not dpae_req_body.validate(['tc_state', 'dpae_version', 'uuid_dpae',
+                    'uuid_controller']):
+            self.logger.error("Validation error %s", dpae_req_body.error)
+            return ({'status': 400, 'msg': dpae_req_body.error})
+
+        #*** Check version compatibility:
+        if dpae_req_body['dpae_version'] != nmeta.version:
+            self.logger.error("Incompatible DPAE version=%s",
+                                dpae_req_body['dpae_version'])
+            return ({'status': 400, 'msg': '{\"Error\": \"Bad Version\"}'})
 
         #*** Check what state is being set (we only support 'run'):
         tc_state = dpae_req_body['tc_state']
@@ -499,8 +512,16 @@ class RESTAPIController(ControllerBase):
         else:
             return ({'status': 500, 'msg': '{\"Error\": \"no switch port\"}'})
 
+        #*** Call function to set up switch to DPAE FE:
         _results = nmeta.tc_start(datapath, out_port)
-        _results_dict = {'msg': _results}
+
+        #*** Add the uuid_dpae to the response:
+        _results['uuid_dpae'] = dpae_req_body['uuid_dpae']
+
+        #*** Encode response as JSON and send to DPAE:
+        json_response = json.dumps(_results)
+        self.logger.debug("json_response=%s", json_response)
+        _results_dict = {'msg': json_response}
         return _results_dict
 
     @rest_command
@@ -510,7 +531,7 @@ class RESTAPIController(ControllerBase):
         (HTTP GET method)
         """
         nmeta = self.nmeta_parent_self
-        _results = nmeta.tc_policy.get_policy()
+        _results = nmeta.main_policy.main_policy
         _results_dict = {'msg': _results}
         return _results_dict
 
@@ -521,7 +542,7 @@ class RESTAPIController(ControllerBase):
         (HTTP GET method)
         """
         nmeta = self.nmeta_parent_self
-        _results = nmeta.tc_policy.optimised_rules
+        _results = nmeta.main_policy.optimised_rules.get_rules()
         _results_dict = {'msg': _results}
         return _results_dict
 

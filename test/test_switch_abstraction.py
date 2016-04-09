@@ -14,6 +14,9 @@ import sys
 
 sys.path.insert(0, '../nmeta2')
 
+#*** For tests that need a logger:
+import logging
+logger = logging.getLogger(__name__)
 
 #*** Testing imports:
 import mock
@@ -38,12 +41,11 @@ from json import JSONEncoder
 import nmeta2
 import switch_abstraction
 import config
-import api
 
 #*** Instantiate Config class:
 _config = config.Config()
 
-#======================== tc_policy.py Unit Tests ============================
+#====================== switch_abstraction.py Unit Tests ======================
 #*** Instantiate class:
 wsgi_app = WSGIApplication()
 nmeta = nmeta2.Nmeta(wsgi=wsgi_app)
@@ -96,35 +98,4 @@ def _switch_test(switch):
     assert switch.mactable.mac2port(mac123, context2) == PORT_NOT_FOUND
     assert switch.mactable.mac2port(mac456, context1) == PORT_NOT_FOUND
 
-#======================== api.py Unit Tests ============================
 
-class _TestController(ControllerBase):
-
-    def __init__(self, req, link, data, **config):
-        super(_TestController, self).__init__(req, link, data, **config)
-        eq_(data['test_param'], 'foo')
-
-class Test_wsgi(unittest.TestCase):
-    """
-    Test case for running WSGI controller for API testing
-    """
-    def setUp(self):
-        wsgi = WSGIApplication()
-        #*** Instantiate API class:
-        self.api = api.Api(self, _config, wsgi)
-
-def test_decode_JSON():
-    #*** The JSON_Body class is in the api.py module. Good JSON:
-    good_json = '{\"foo\": \"123\"}'
-    good = api.JSON_Body(good_json)
-    assert not good.error
-    assert good.error == ""
-    assert good.json == {'foo': '123'}
-    assert good['foo'] == '123'
-    assert good['bar'] == 0
-
-    #*** Bad JSON:
-    bad_json = "foo, bar=99"
-    bad = api.JSON_Body(bad_json)
-    assert bad.json == {}
-    assert bad.error == '{\"Error\": \"Bad JSON\"}'
