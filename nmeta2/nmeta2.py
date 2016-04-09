@@ -424,14 +424,14 @@ class Nmeta(app_manager.RyuApp):
         else:
             self.logger.info("Illegal port state %s %s", port_no, reason)
 
-    def tc_start(self, datapath, out_port):
+    def tc_start(self, datapath, dpae_port):
         """
         Add a Flow Entry to switch to clone selected packets to a
         DPAE so that it can perform Traffic Classification analysis
         on them
         """
-        self.logger.info("Starting TC to DPAE on datapath=%s, out_port=%s",
-                            datapath.id, out_port)
+        self.logger.info("Starting TC to DPAE on datapath=%s, dpae_port=%s",
+                            datapath.id, dpae_port)
         switch = self.switches[datapath.id]
         #*** Check if Active or Passive TC Mode:
         mode = self.main_policy.tc_policies.mode
@@ -443,32 +443,33 @@ class Nmeta(app_manager.RyuApp):
 
         if self.main_policy.identity.lldp:
             #*** Install FEs to send LLDP Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_lldp(out_port)
+            switch.flowtables.add_fe_iig_lldp(dpae_port)
 
         if self.main_policy.identity.dhcp:
             #*** Install FEs to send DHCP Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_dhcp(out_port)
+            switch.flowtables.add_fe_iig_dhcp(dpae_port)
 
         if self.main_policy.identity.arp:
             #*** Install FEs to send ARP Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_arp(out_port)
+            switch.flowtables.add_fe_iig_arp(dpae_port)
 
         if self.main_policy.identity.dns:
             #*** Install FEs to send DNS Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_dns(out_port)
+            switch.flowtables.add_fe_iig_dns(dpae_port)
 
         if mode == 'active':
             #*** Install FE to so packets returning from DPAE in active mode
             #*** bypass learning tables and go straight to treatment:
-            switch.flowtables.add_fe_iig_dpae_active_bypass(out_port)
+            switch.flowtables.add_fe_iig_dpae_active_bypass(dpae_port)
 
         #*** Add any general TC flows to send to DPAE if required by policy
         #*** (i.e. statistical or payload):
         switch.flowtables.add_fe_tc_dpae(
-                        self.main_policy.optimised_rules.get_rules(), out_port)
+                        self.main_policy.optimised_rules.get_rules(),
+                        dpae_port, mode)
 
-        self.logger.info("TC started to DPAE on datapath=%s, out_port=%s",
-                            datapath.id, out_port)
+        self.logger.info("TC started to DPAE on datapath=%s, dpae_port=%s",
+                            datapath.id, dpae_port)
         _results = {"status": "tc_started",
                         "mode": mode}
         return _results

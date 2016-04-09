@@ -372,7 +372,7 @@ class FlowTables(object):
                                 match=match, instructions=inst)
         self.datapath.send_msg(mod)
 
-    def add_fe_iig_lldp(self, out_port):
+    def add_fe_iig_lldp(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
         flow table to clone LLDP packets to a DPAE
@@ -382,16 +382,16 @@ class FlowTables(object):
         priority = 2
         #*** LLDP:
         match = parser.OFPMatch(eth_type=0x88CC)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing LLDP to DPAE flow in dpid=%s via port"
-                            "=%s", self.dpid, out_port)
+                            "=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
-    def add_fe_iig_dhcp(self, out_port):
+    def add_fe_iig_dhcp(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
         flow table to clone DHCP packets to a DPAE
@@ -401,27 +401,27 @@ class FlowTables(object):
         priority = 2
         #*** DHCP:
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_src=67)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DHCP src port to DPAE flow in dpid=%s "
-                            "via port=%s", self.dpid, out_port)
+                            "via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_dst=67)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DHCP dst port to DPAE flow in dpid=%s "
-                            "via port=%s", self.dpid, out_port)
+                            "via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
-    def add_fe_iig_arp(self, out_port):
+    def add_fe_iig_arp(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
         flow table to clone selected packets to a DPAE
@@ -431,17 +431,17 @@ class FlowTables(object):
         priority = 2
         #*** ARP:
         match = parser.OFPMatch(eth_type=0x0806)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing ARP to DPAE flow in dpid=%s via port"
-                            "=%s", self.dpid, out_port)
+                            "=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
-    def add_fe_iig_dns(self, out_port):
+    def add_fe_iig_dns(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
         flow table to clone DNS packets to a DPAE
@@ -451,45 +451,45 @@ class FlowTables(object):
         priority = 2
         #*** UDP DNS (a FE each for source and destination UDP 53):
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_src=53)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DNS UDP src port to DPAE flow in dpid=%s"
-                            " via port=%s", self.dpid, out_port)
+                            " via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=17, udp_dst=53)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DNS UDP dst port to DPAE flow in dpid=%s"
-                            " via port=%s", self.dpid, out_port)
+                            " via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
         #*** TCP DNS (a FE each for source and destination TCP 53):
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=6, tcp_src=53)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DNS TCP src port to DPAE flow in dpid=%s"
-                            " via port=%s", self.dpid, out_port)
+                            " via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
         match = parser.OFPMatch(eth_type=0x0800, ip_proto=6, tcp_dst=53)
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
                         parser.OFPInstructionGotoTable(self.ft_iig + 1)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DNS TCP dst port to DPAE flow in dpid=%s"
-                            " via port=%s", self.dpid, out_port)
+                            " via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
     def add_fe_iig_broadcast(self):
@@ -587,7 +587,8 @@ class FlowTables(object):
         if flow_dict['actions'] and 'qos_treatment' in flow_dict:
             qos = flow_dict['qos_treatment']
             self.logger.debug("qos_treatment=%s", qos)
-            queue = self._nmeta.tc_policy.get_policy_qos_treatment_value(qos)
+            queue = self._nmeta.main_policy.qos_treatment.\
+                                            get_policy_qos_treatment_value(qos)
             self.logger.debug("queue=%s", queue)
         if queue:
             actions = [parser.OFPActionSetQueue(queue)]
@@ -871,11 +872,13 @@ class FlowTables(object):
             else:
                 self.logger.info("Not installing to switch at this stage")
 
-    def add_fe_tc_dpae(self, tc_flows, out_port):
+    def add_fe_tc_dpae(self, tc_flows, dpae_port, mode):
         """
-        Install non-DPAE static Traffic Classification (TC) flows from
+        Install DPAE Traffic Classification (TC) flows from
         optimised TC policy to switch (i.e. Flow Entries that
-        invoke actions without need for DPAE to classify)
+        invoke actions that need for DPAE to classify).
+        Mode is either active or passive. For the former, we
+        don't do a goto-table instruction.
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -911,11 +914,19 @@ class FlowTables(object):
                     actions.append(parser.OFPActionSetQueue(queue_num))
                 #*** Set the output port in any parser.OFPActionOutput actions:
                 if 'parser.OFPActionOutput(dpae_port)' in fe_action:
-                    actions.append(parser.OFPActionOutput(out_port))
+                    actions.append(parser.OFPActionOutput(dpae_port))
                 #*** Build the instructions for the FE:
-                inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(flow_table + 1)]
+                if mode == 'passive':
+                    inst = [parser.OFPInstructionActions(
+                            ofproto.OFPIT_APPLY_ACTIONS, actions),
+                            parser.OFPInstructionGotoTable(flow_table + 1)]
+                elif mode == 'active':
+                    inst = [parser.OFPInstructionActions(
+                            ofproto.OFPIT_APPLY_ACTIONS, actions)]
+                else:
+                    #*** This is a bad condition...
+                    self.logger.error("unknown mode, mode=%s", mode)
+                    return 0
                 #*** Put it all together and install to switch:
                 mod = parser.OFPFlowMod(datapath=self.datapath,
                             table_id=flow_table,
@@ -923,6 +934,7 @@ class FlowTables(object):
                             match=match,
                             instructions=inst)
                 self.datapath.send_msg(mod)
+                return 1
 
     def add_fe_tc_id(self, id_type, id_detail, id_mac, tc_flows):
         """
@@ -1022,7 +1034,7 @@ class FlowTables(object):
         self.datapath.send_msg(mod)
         return 1
 
-    def add_group_dpae(self, out_port):
+    def add_group_dpae(self, dpae_port):
         """
         Add Group Table to the switch for forwarding packets to
         DPAE out a specific port.
@@ -1035,7 +1047,7 @@ class FlowTables(object):
         group_id = self.ft_group_dpae
 
         #*** Set the actions:
-        actions = [parser.OFPActionOutput(out_port)]
+        actions = [parser.OFPActionOutput(dpae_port)]
 
         #*** Set up the bucket:
         weight = 100
@@ -1050,7 +1062,7 @@ class FlowTables(object):
 
         #*** Install to switch:
         self.logger.debug("Installing group table id=%s to send to DPAE "
-                                "via port=%s", group_id, out_port)
+                                "via port=%s", group_id, dpae_port)
         self.datapath.send_msg(mod)
         return 1
 
