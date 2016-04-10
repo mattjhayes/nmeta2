@@ -39,11 +39,11 @@ CONFIG_TEMPLATE = \
     'nmeta_logging_level_c': 'INFO',
     'sa_logging_level_c': 'INFO',
     'api_logging_level_c': 'INFO',
-    'tc_policy_logging_level_c': 'INFO',
+    'main_policy_logging_level_c': 'INFO',
     'nmeta_logging_level_s': 'INFO',
     'sa_logging_level_s': 'INFO',
     'api_logging_level_s': 'INFO',
-    'tc_policy_logging_level_s': 'INFO',
+    'main_policy_logging_level_s': 'INFO',
     'syslog_enabled': 0,
     'loghost': 'localhost',
     'logport': 514,
@@ -63,7 +63,7 @@ CONFIG_TEMPLATE = \
     'mongo_port': 27017,
     'context_default': 1,
     'config_directory': 'config',
-    'tc_policy_filename': 'main_policy.yaml',
+    'main_policy_filename': 'main_policy.yaml',
     'dpae2ctrl_mac': '02:6e:6d:65:74:62',
     'ctrl2dpae_mac': '02:6e:6d:65:74:61',
     'dpae_ethertype': '8267',
@@ -151,3 +151,12 @@ class Config(object):
                                 "not exist", config_key)
             return 0
 
+    def set_value(self, config_key, config_value):
+        """
+        Passed a key and see if it exists in the config YAML. If it does
+        then set its value to the supplied value and return 1 otherwise 0
+        """
+        if config_key in self._config_yaml:
+            self._config_yaml[config_key] = config_value
+            return 1
+        return 0
