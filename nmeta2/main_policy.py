@@ -456,14 +456,13 @@ class PortSets(object):
         """
         #*** TBD, this is hardcoded to this name, needs fixing:
         port_set = self.policy['all_access_ports']
-
+        result = []
         for switchdict in port_set:
             switchdict2 = switchdict.itervalues().next()
             if switchdict2['DPID'] == dpid:
                 ports = switchdict2['ports']
                 self.logger.debug("found ports=%s dpid=%s", ports, dpid)
                 #*** turn the ports spec into a list:
-                result = []
                 for part in ports.split(','):
                     if '-' in part:
                         a, b = part.split('-')
@@ -474,7 +473,6 @@ class PortSets(object):
                         result.append(a)
         self.logger.debug("result is %s", result)
         return result
-
 
 class Optimise(object):
     """
