@@ -54,14 +54,30 @@ sudo pip install simplejson
 ### Install MongoDB
 Install MongoDB as per [their instructions](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/)
 
-Add pymongo for a Python API into MongoDB:
+import the MongoDB public GPG Key:
 ```
-sudo pip install pymongo
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
 ```
 
-Create a directory for the database:
+Create a list file for MongoDB:
 ```
-sudo mkdir -p /data/db
+echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
+```
+
+Reload local package database:
+```
+sudo apt-get update
+```
+
+Install MongoDB:
+```
+sudo apt-get install -y mongodb-org
+```
+
+Add pymongo for a Python API into MongoDB:
+```
+sudo apt-get install build-essential python-dev
+sudo pip install pymongo
 ```
 
 Turn on smallfiles to cope with small file system size:
@@ -79,6 +95,7 @@ Start MongoDB with:
 ```
 sudo service mongod start
 ```
+
 
 ### Clone nmeta2
 Clone nmeta2:
