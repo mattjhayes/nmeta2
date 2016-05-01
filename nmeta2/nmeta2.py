@@ -449,10 +449,6 @@ class Nmeta(app_manager.RyuApp):
             #*** Install FEs to send DHCP Identity indicators to DPAE:
             switch.flowtables.add_fe_iig_dhcp(dpae_port)
 
-        if self.main_policy.identity.arp:
-            #*** Install FEs to send ARP Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_arp(dpae_port)
-
         if self.main_policy.identity.dns:
             #*** Install FEs to send DNS Identity indicators to DPAE:
             switch.flowtables.add_fe_iig_dns(dpae_port)

@@ -421,26 +421,6 @@ class FlowTables(object):
                             "via port=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
-    def add_fe_iig_arp(self, dpae_port):
-        """
-        Add Flow Entry (FE) to the Identity Indicators (General)
-        flow table to clone selected packets to a DPAE
-        """
-        ofproto = self.datapath.ofproto
-        parser = self.datapath.ofproto_parser
-        priority = 2
-        #*** ARP:
-        match = parser.OFPMatch(eth_type=0x0806)
-        actions = [parser.OFPActionOutput(dpae_port)]
-        inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_iig + 1)]
-        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
-                            priority=priority, match=match, instructions=inst)
-        self.logger.debug("Installing ARP to DPAE flow in dpid=%s via port"
-                            "=%s", self.dpid, dpae_port)
-        self.datapath.send_msg(mod)
-
     def add_fe_iig_dns(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
