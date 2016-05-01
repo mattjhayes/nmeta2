@@ -261,7 +261,7 @@ class TCRule(object):
                                'identity_lldp_systemname_re': 'String',
                                'identity_service_dns': 'String',
                                'identity_service_dns_re': 'String',
-                               'payload_type': 'String',
+                               'payload': 'String',
                                'statistical': 'String',
                                'match_type': 'MatchType',
                                'conditions_list': 'PolicyConditions'}
@@ -491,7 +491,7 @@ class Optimise(object):
                     'identity_lldp_systemname_re': 'identity',
                     'identity_service_dns': 'identity',
                     'identity_service_dns_re': 'identity',
-                    'payload_type': 'payload',
+                    'payload': 'payload',
                     'statistical': 'statistical'
                         }
 
