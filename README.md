@@ -46,6 +46,12 @@ Install Python YAML ("YAML Ain't Markup Language") for parsing config and policy
 sudo apt-get install python-yaml
 ```
 
+### Install coloredlogs
+Install coloredlogs to improve readability of terminal logs by colour-coding:
+```
+sudo pip install coloredlogs
+```
+
 ### Install simplejson
 ```
 sudo pip install simplejson

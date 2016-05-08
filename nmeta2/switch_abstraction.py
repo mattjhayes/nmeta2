@@ -19,8 +19,11 @@ It provides functions that abstract the details of OpenFlow calls, including
 differences between OpenFlow versions where practical
 """
 
+#*** Logging Imports:
 import logging
 import logging.handlers
+
+#*** General Imports:
 import sys
 import struct
 import re
@@ -56,6 +59,7 @@ class Switches(object):
         _logfacility = _config.get_value('logfacility')
         _syslog_format = _config.get_value('syslog_format')
         _console_log_enabled = _config.get_value('console_log_enabled')
+        _coloredlogs_enabled = _config.get_value('coloredlogs_enabled')
         _console_format = _config.get_value('console_format')
         #*** Set up Logging:
         self.logger = logging.getLogger(__name__)

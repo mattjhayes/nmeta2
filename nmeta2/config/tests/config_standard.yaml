@@ -34,6 +34,9 @@ main_policy_logging_level_s: INFO
 #*** Set to 1 if want to log to console:
 console_log_enabled: 1
 #
+#*** Set to 1 if you want colorised logs in terminal:
+coloredlogs_enabled: 0
+#
 #*** Console Log Format:
 console_format: "%(levelname)s: %(name)s %(funcName)s: %(message)s"
 #
