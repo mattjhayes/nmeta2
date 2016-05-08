@@ -29,8 +29,11 @@ of concept code and carries no warrantee whatsoever.
 You have been warned.
 """
 
-#*** General Imports:
+#*** Logging Imports:
 import logging
+#import coloredlogs
+
+#*** General Imports:
 import sys
 import time
 
@@ -80,7 +83,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.2.0'
+        self.version = '0.3.0'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
@@ -97,6 +100,7 @@ class Nmeta(app_manager.RyuApp):
         _logfacility = self.config.get_value('logfacility')
         _syslog_format = self.config.get_value('syslog_format')
         _console_log_enabled = self.config.get_value('console_log_enabled')
+        _coloredlogs_enabled = self.config.get_value('coloredlogs_enabled')
         _console_format = self.config.get_value('console_format')
         #*** Set up Logging:
         self.logger = logging.getLogger(__name__)
@@ -448,10 +452,6 @@ class Nmeta(app_manager.RyuApp):
         if self.main_policy.identity.dhcp:
             #*** Install FEs to send DHCP Identity indicators to DPAE:
             switch.flowtables.add_fe_iig_dhcp(dpae_port)
-
-        if self.main_policy.identity.arp:
-            #*** Install FEs to send ARP Identity indicators to DPAE:
-            switch.flowtables.add_fe_iig_arp(dpae_port)
 
         if self.main_policy.identity.dns:
             #*** Install FEs to send DNS Identity indicators to DPAE:

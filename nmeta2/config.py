@@ -51,6 +51,7 @@ CONFIG_TEMPLATE = \
     'syslog_format': \
         "sev=%(levelname)s module=%(name)s func=%(funcName)s %(message)s",
     'console_log_enabled': 1,
+    'coloredlogs_enabled': 1,
     'console_format': "%(levelname)s: %(name)s %(funcName)s: %(message)s",
     'ft_iig': 0,
     'ft_iim': 1,

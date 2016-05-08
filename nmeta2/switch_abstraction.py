@@ -19,8 +19,11 @@ It provides functions that abstract the details of OpenFlow calls, including
 differences between OpenFlow versions where practical
 """
 
+#*** Logging Imports:
 import logging
 import logging.handlers
+
+#*** General Imports:
 import sys
 import struct
 import re
@@ -56,6 +59,7 @@ class Switches(object):
         _logfacility = _config.get_value('logfacility')
         _syslog_format = _config.get_value('syslog_format')
         _console_log_enabled = _config.get_value('console_log_enabled')
+        _coloredlogs_enabled = _config.get_value('coloredlogs_enabled')
         _console_format = _config.get_value('console_format')
         #*** Set up Logging:
         self.logger = logging.getLogger(__name__)
@@ -419,26 +423,6 @@ class FlowTables(object):
                             priority=priority, match=match, instructions=inst)
         self.logger.debug("Installing DHCP dst port to DPAE flow in dpid=%s "
                             "via port=%s", self.dpid, dpae_port)
-        self.datapath.send_msg(mod)
-
-    def add_fe_iig_arp(self, dpae_port):
-        """
-        Add Flow Entry (FE) to the Identity Indicators (General)
-        flow table to clone selected packets to a DPAE
-        """
-        ofproto = self.datapath.ofproto
-        parser = self.datapath.ofproto_parser
-        priority = 2
-        #*** ARP:
-        match = parser.OFPMatch(eth_type=0x0806)
-        actions = [parser.OFPActionOutput(dpae_port)]
-        inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_iig + 1)]
-        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iig,
-                            priority=priority, match=match, instructions=inst)
-        self.logger.debug("Installing ARP to DPAE flow in dpid=%s via port"
-                            "=%s", self.dpid, dpae_port)
         self.datapath.send_msg(mod)
 
     def add_fe_iig_dns(self, dpae_port):

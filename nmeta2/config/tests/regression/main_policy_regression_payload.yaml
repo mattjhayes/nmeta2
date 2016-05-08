@@ -1,4 +1,4 @@
-#*** Main Policy for nmeta - Statistical Regression TC of Iperf
+#*** Main Policy for nmeta - Payload Regression of HTTP URI Classification
 #*** Written in YAML
 #
 tc_policies:
@@ -7,19 +7,19 @@ tc_policies:
         comment: Basic TC Use Case
         rule_set: tc_ruleset_1
         port_set: all_access_ports
-        mode: passive
+        mode: active
 #
 tc_rules:
     # Traffic Classification Rulesets and Rules
     tc_ruleset_1:
-        - comment: Constrained Bandwidth Traffic (Statistical)
+        - comment: Constrained Bandwidth Traffic (Payload)
           match_type: any
           conditions_list:
               - match_type: any
-                statistical: 'statistical_qos_bandwidth_1'
+                payload: 'payload_uri_1'
           actions:
             set_qos: classifier_return
-            set_desc: description="Statistical TC Control of Traffic QoS Treatment"
+            set_desc: description="Payload TC Control of Traffic QoS Treatment"
 #
 identity:
     # Control how identity information is collected
