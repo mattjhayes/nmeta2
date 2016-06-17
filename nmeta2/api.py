@@ -432,7 +432,7 @@ class RESTAPIController(ControllerBase):
 
         #*** Send confirmation packet, no queueing:
         switch = nmeta.switches[dpid]
-        packet_out_result = switch.packet_out(data, in_port, out_port, 0, 1)
+        packet_out_result = switch.packet_out(data, in_port, out_port, 0, 0)
 
         #*** Check packet send result:
         if not packet_out_result:
@@ -466,9 +466,9 @@ class RESTAPIController(ControllerBase):
 
         #*** Check version compatibility:
         if dpae_req_body['dpae_version'] != nmeta.version:
-            self.logger.error("Incompatible DPAE version=%s",
-                                dpae_req_body['dpae_version'])
-            return ({'status': 400, 'msg': '{\"Error\": \"Bad Version\"}'})
+            self.logger.warning("Possible version compatibility issue. "
+                        "DPAE_version=%s nmeta2_version=%s",
+                        dpae_req_body['dpae_version'], nmeta.version)
 
         #*** Check what state is being set (we only support 'run'):
         tc_state = dpae_req_body['tc_state']

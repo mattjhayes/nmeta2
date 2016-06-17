@@ -83,7 +83,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.3.0'
+        self.version = '0.3.1'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
@@ -375,7 +375,7 @@ class Nmeta(app_manager.RyuApp):
         if eth.src == self.ctrl2dpae_mac and eth.dst == self.dpae2ctrl_mac:
             self.dpae_join(pkt, datapath, in_port)
 
-        self.logger.debug("Learned mac=%s dpid=%s port=%s",
+        self.logger.info("Learned mac=%s dpid=%s port=%s",
                                eth.src, datapath.id, in_port)
 
         #*** Add to MAC/port pair to switch MAC table:
