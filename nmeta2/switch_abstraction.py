@@ -98,7 +98,7 @@ class Switches(object):
         """
         Add a switch to the class
         """
-        self.logger.debug("Adding switch dpid=%s", datapath.id)
+        self.logger.info("Adding switch dpid=%s", datapath.id)
         self.switch[datapath.id] = Switch(self._nmeta, self.logger,
                                             self._config, datapath)
         return 1
@@ -201,13 +201,14 @@ class Switch(object):
         Sends a supplied packet out switch port(s) in specific queue.
         Set nq=1 if want no queueing specified (i.e. for a flooded
         packet)
+        Use nq=1 for Zodiac FX compatibility
         Does not support use of Buffer IDs
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
         dpid = self.datapath.id
         #*** First build OF version specific list of actions:
-        if not nq:
+        if nq:
             #*** Packet out with no queue (nq):
             actions = [self.datapath.ofproto_parser.OFPActionOutput \
                              (out_port, 0)]
@@ -241,6 +242,19 @@ class MACTable(object):
         self.dpid = datapath.id
         self._config = _config
         self.parser = datapath.ofproto_parser
+        #*** Load the Flow Table ID numbers:
+        self.ft_iig = self._config.get_value("ft_iig")
+        self.ft_iim = self._config.get_value("ft_iim")
+        self.ft_tcf = self._config.get_value("ft_tcf")
+        self.ft_tc = self._config.get_value("ft_tc")
+        self.ft_tt = self._config.get_value("ft_tt")
+        self.ft_fwd = self._config.get_value("ft_fwd")
+        self.ft_group_dpae = self._config.get_value("ft_group_dpae")
+        #*** MAC aging:
+        self.mac_iim_idle_timeout = \
+                            self._config.get_value("mac_iim_idle_timeout")
+        self.mac_fwd_idle_timeout = \
+                            self._config.get_value("mac_fwd_idle_timeout")
 
     def add(self, mac, in_port, context):
         """
@@ -257,16 +271,63 @@ class MACTable(object):
                                                     'context': context})
         if db_result and db_result['port'] != in_port:
             #*** We've learnt MAC via a different port so need to update:
-            self.logger.debug("MAC/port formerly known as: dpid=%s mac=%s "
-                            "port=%s context=%s", dpid, mac, in_port, context)
+            self.logger.info("MAC mac=%s dpid=%s has moved from port=%s "
+                            "to port=%s context=%s", mac, dpid,
+                            db_result['port'], in_port, context)
+            #*** Modify database entry:
+            nmeta.dbidmac.update({'dpid': dpid, 'mac': mac,
+                                    'context': context},
+                                    {"$set":{'port': in_port}})
+
+            #*** Remove old flow from switch (???)
             # TBD
 
-        #*** Record in database:
-        self.logger.debug("Adding MAC/port to DB: dpid=%s mac=%s port=%s "
+        else:
+            #*** Record in database:
+            self.logger.debug("Adding MAC/port to DB: dpid=%s mac=%s port=%s "
                             "context=%s", dpid, mac, in_port, context)
-        dbidmac_doc = {'dpid': dpid, 'mac': mac, 'port': in_port,
+            dbidmac_doc = {'dpid': dpid, 'mac': mac, 'port': in_port,
                          'context': context}
-        db_id = nmeta.dbidmac.insert_one(dbidmac_doc).inserted_id
+            db_id = nmeta.dbidmac.insert_one(dbidmac_doc).inserted_id
+
+    def delete(self, mac, in_port, context):
+        """
+        Passed a MAC address, switch port and context to delete.
+        Delete any entries from DB and from switch
+        """
+        nmeta = self._nmeta
+        dpid = self.dpid
+
+        #*** Check if MAC known in database for this switch/context:
+        db_result = nmeta.dbidmac.delete_many({'dpid': dpid, 'mac': mac,
+                                                    'context': context})
+        self.logger.debug("Deleted MAC/port from DB: dpid=%s mac=%s port=%s "
+                            "context=%s entries=%s", dpid, mac, in_port,
+                            context, db_result.deleted_count)
+
+        #*** Delete FE from switch:
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        #*** Priority needs to be greater than 0:
+        priority = 1
+        match = parser.OFPMatch(in_port=in_port, eth_src=mac)
+        actions = []
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_iim + 1)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, cookie=0,
+                            cookie_mask=0,
+                            table_id=self.ft_iim,
+                            command=ofproto.OFPFC_DELETE,
+                            idle_timeout=0, hard_timeout=0,
+                            priority=priority,
+                            buffer_id=ofproto.OFP_NO_BUFFER,
+                            out_port=ofproto.OFPP_ANY,
+                            out_group=ofproto.OFPG_ANY,
+                            flags=ofproto.OFPFF_SEND_FLOW_REM,
+                            match=match,
+                            instructions=inst)
+        self.datapath.send_msg(mod)
 
     def mac2port(self, mac, context):
         """

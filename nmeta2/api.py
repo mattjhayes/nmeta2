@@ -432,7 +432,7 @@ class RESTAPIController(ControllerBase):
 
         #*** Send confirmation packet, no queueing:
         switch = nmeta.switches[dpid]
-        packet_out_result = switch.packet_out(data, in_port, out_port, 0, 0)
+        packet_out_result = switch.packet_out(data, in_port, out_port, 0, 1)
 
         #*** Check packet send result:
         if not packet_out_result:
