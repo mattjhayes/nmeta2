@@ -352,14 +352,6 @@ class Nmeta(app_manager.RyuApp):
             #*** TBD, deal with context:
             context = self.context_default
             switch.mactable.delete(mac, in_port, context)
-        if msg.table_id == self.ft_fwd and \
-                                        msg.reason == ofp.OFPRR_IDLE_TIMEOUT:
-            #*** Delete MAC Flow Entries from the switch for this MAC/port:
-            #
-            #TBD - we don't know in_port so can't do much...
-            # i.e.: match=OFPMatch(oxm_fields={'eth_dst': '08:00:27:2a:d6:dd'})
-            pass
-
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
