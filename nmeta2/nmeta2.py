@@ -83,7 +83,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.3.1'
+        self.version = '0.3.2'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
@@ -321,8 +321,8 @@ class Nmeta(app_manager.RyuApp):
         a flow from a flow table
         """
         msg = ev.msg
-        dp = msg.datapath
-        ofp = dp.ofproto
+        datapath = msg.datapath
+        ofp = datapath.ofproto
         if msg.reason == ofp.OFPRR_IDLE_TIMEOUT:
             reason = 'IDLE TIMEOUT'
         elif msg.reason == ofp.OFPRR_HARD_TIMEOUT:
@@ -333,7 +333,7 @@ class Nmeta(app_manager.RyuApp):
             reason = 'GROUP DELETE'
         else:
             reason = 'unknown'
-        self.logger.debug('Flow removed msg '
+        self.logger.info('Flow removed msg '
                               'cookie=%d priority=%d reason=%s table_id=%d '
                               'duration_sec=%d '
                               'idle_timeout=%d hard_timeout=%d '
@@ -342,16 +342,16 @@ class Nmeta(app_manager.RyuApp):
                               msg.duration_sec,
                               msg.idle_timeout, msg.hard_timeout,
                               msg.packet_count, msg.byte_count, msg.match)
-
-        if msg.table_id == self.ft_iim:
-            #*** Flow entries that age out of IIM table need to remove entry
-            #***  from FWD table for that MAC:
-            self.logger.debug("FE removed from IIM table. Will delete "
-                                    "equivalent forwarding FE")
-            #match=OFPMatch(oxm_fields={'eth_src': '08:00:27:c8:db:91', 'in_port': 2})
-            #NEED TO REFORMAT, TAKE MAC FROM IT AND PUT INTO FWD MATCH...
-
-
+        # Is it a MAC learning suppression FE idle timeout?
+        if msg.table_id == self.ft_iim and \
+                                        msg.reason == ofp.OFPRR_IDLE_TIMEOUT:
+            switch = self.switches[datapath.id]
+            #*** Extract the MAC from the match:
+            mac = msg.match['eth_src']
+            in_port = msg.match['in_port']
+            #*** TBD, deal with context:
+            context = self.context_default
+            switch.mactable.delete(mac, in_port, context)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):

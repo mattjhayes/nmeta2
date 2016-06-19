@@ -1,4 +1,4 @@
-#*** Main Policy for nmeta - Statistical Regression TC of Iperf
+#*** Main Policy for nmeta - NFPS Load Test
 #*** Written in YAML
 #
 tc_policies:
@@ -7,11 +7,20 @@ tc_policies:
         comment: Basic TC Use Case
         rule_set: tc_ruleset_1
         port_set: all_access_ports
-        mode: active
+        mode: passive
 #
 tc_rules:
     # Traffic Classification Rulesets and Rules
     tc_ruleset_1:
+        - comment: Constrained Bandwidth Traffic
+          match_type: any
+          conditions_list:
+              - match_type: any
+                tcp_src: 1234
+                tcp_dst: 1234
+          actions:
+            set_qos: constrained_bw
+            set_desc: description="Constrained Bandwidth Traffic"
         - comment: Constrained Bandwidth Traffic (Statistical)
           match_type: any
           conditions_list:
