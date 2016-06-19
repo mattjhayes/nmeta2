@@ -64,7 +64,7 @@ ft_fwd: 5
 #*** Group for DPAE:
 ft_group_dpae: 1
 #
-#========== Mongodb Database ==========================
+#========== MongoDB Database ==========================
 mongo_addr: localhost
 mongo_port: 27017
 #
