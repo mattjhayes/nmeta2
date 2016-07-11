@@ -448,7 +448,7 @@ class FlowTables(object):
         actions = []
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tt)]
+                        parser.OFPInstructionGotoTable(self.ft_iig)]
         mod = parser.OFPFlowMod(datapath=self.datapath,
                                 table_id=self.ft_iig, priority=priority,
                                 match=match, instructions=inst)
