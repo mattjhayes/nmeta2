@@ -374,6 +374,7 @@ class Nmeta(app_manager.RyuApp):
         #*** Is it a DPAE Join request? If so, call function to handle it:
         if eth.src == self.ctrl2dpae_mac and eth.dst == self.dpae2ctrl_mac:
             self.dpae_join(pkt, datapath, in_port)
+            return 1
 
         self.logger.info("Learned mac=%s dpid=%s port=%s",
                                eth.src, datapath.id, in_port)
