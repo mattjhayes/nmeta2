@@ -381,15 +381,24 @@ class Nmeta(app_manager.RyuApp):
         #*** Add to MAC/port pair to switch MAC table:
         switch.mactable.add(eth.src, in_port, context)
 
-        #*** Add source MAC / in port to Identity Indicator (MAC) table so
-        #***  that we don't get further packet in events for this combo:
-        switch.flowtables.add_fe_iim_macport_src(in_port, eth.src)
-
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
 
-        #*** Don't do a packet out, as it continued through the pipeline...
+        #*** Add source MAC / in port to Identity Indicator (MAC) table so
+        #***  that we don't get further packet in events for this combo:
+        switch.flowtables.add_fe_iim_macport_src(in_port, eth.src)
+
+        #*** Do a packet out to avoid going through DPAE in active mode
+        #*** which causes bad MAC learning in adjacent switches
+        #*** if forwarding entry not installed:
+
+        # TBD, send out specific port if known:
+        ofproto = msg.datapath.ofproto
+        out_port = ofproto.OFPP_FLOOD
+
+        #*** Packet out:
+        switch.packet_out(msg.data, in_port, out_port, 0, 1)
 
 
     @set_ev_cls(ofp_event.EventOFPErrorMsg,

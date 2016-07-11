@@ -596,8 +596,7 @@ class FlowTables(object):
         """
         Add Identity Indicator (MAC) flow table miss Flow Entry
         to clone a table-miss packet to the controller as a
-        packet-in message and also send the packet to the next
-        Flow Table so that it continues pipeline processing
+        packet-in message
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -607,8 +606,7 @@ class FlowTables(object):
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_iim + 1)]
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_iim,
                                 priority=0, match=match, instructions=inst)
         self.datapath.send_msg(mod)
