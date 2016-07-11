@@ -448,6 +448,7 @@ class Nmeta(app_manager.RyuApp):
         switch = self.switches[datapath.id]
         #*** Check if Active or Passive TC Mode:
         mode = self.main_policy.tc_policies.mode
+        self.logger.info("TC mode=%s", mode)
 
         #*** Set up group table to send to DPAE:
         # NEEDS OVS 2.1 OR HIGHER SO COMMENTED OUT FOR THE MOMENT
