@@ -392,6 +392,7 @@ class FlowTables(object):
         self._config = _config
         self.parser = datapath.ofproto_parser
         self.dpae2ctrl_mac = _config.get_value("dpae2ctrl_mac")
+        self.dpae_ethertype = _config.get_value("dpae_ethertype")
         #*** Load the Flow Table ID numbers:
         self.ft_iig = self._config.get_value("ft_iig")
         self.ft_iim = self._config.get_value("ft_iim")
@@ -803,7 +804,8 @@ class FlowTables(object):
         priority = 4
         self.logger.info("Adding Identity Indicator (MAC) flow table flow "
                          "entry for DPAE Join to dpid=%s", self.dpid)
-        match = parser.OFPMatch(eth_dst=self.dpae2ctrl_mac)
+        match = parser.OFPMatch(eth_dst=self.dpae2ctrl_mac,
+                                eth_type=self.dpae_ethertype)
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         inst = [parser.OFPInstructionActions(
