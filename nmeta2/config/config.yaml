@@ -49,10 +49,10 @@ main_policy_logging_level_c: DEBUG
 #
 #========== Flow Table Ids =============================
 # Don't change these, just here for a matter of record:
-#*** Identity Indicator (General):
-ft_iig: 0
 #*** Identity Indicator (MAC):
-ft_iim: 1
+ft_iim: 0
+#*** Identity Indicator (General):
+ft_iig: 1
 #*** Traffic Classification Filter:
 ft_tcf: 2
 #*** Traffic Classification:

@@ -410,50 +410,6 @@ class FlowTables(object):
         #*** Timeout for a dynamic QoS treatment FE:
         self.fe_idle_timeout_qos = _config.get_value("fe_idle_timeout_qos")
 
-    def add_fe_iig_dpae_join(self):
-        """
-        Add Identity Indicator (General) Flow Entry to
-        send DPAE Join packets to the controller as
-        packet-in messages
-        """
-        ofproto = self.datapath.ofproto
-        parser = self.datapath.ofproto_parser
-        priority = 4
-        self.logger.info("Adding Identity Indicator (General) flow table flow "
-                         "entry for DPAE Join to dpid=%s", self.dpid)
-        match = parser.OFPMatch(eth_dst=self.dpae2ctrl_mac)
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
-        mod = parser.OFPFlowMod(datapath=self.datapath,
-                                table_id=self.ft_iig, priority=priority,
-                                match=match, instructions=inst)
-        self.datapath.send_msg(mod)
-
-    def add_fe_iig_dpae_active_bypass(self, dpae_port):
-        """
-        Add Identity Indicator (General) Flow Entry to
-        bypass intermediate tables for traffic from DPAE
-        (return packets from active mode TC) and goto
-        treatment table direct
-        """
-        ofproto = self.datapath.ofproto
-        parser = self.datapath.ofproto_parser
-        priority = 3
-        self.logger.info("Adding Identity Indicator (General) flow table flow "
-                         "entry for DPAE return traffic bypass to dpid=%s",
-                         self.dpid)
-        match = parser.OFPMatch(in_port=dpae_port)
-        actions = []
-        inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tt)]
-        mod = parser.OFPFlowMod(datapath=self.datapath,
-                                table_id=self.ft_iig, priority=priority,
-                                match=match, instructions=inst)
-        self.datapath.send_msg(mod)
-
     def add_fe_iig_lldp(self, dpae_port):
         """
         Add Flow Entry (FE) to the Identity Indicators (General)
@@ -834,6 +790,50 @@ class FlowTables(object):
                         ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_fwd,
                                     priority=0, match=match, instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_iim_dpae_join(self):
+        """
+        Add Identity Indicator (MAC) Flow Entry to
+        send DPAE Join packets to the controller as
+        packet-in messages
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        priority = 4
+        self.logger.info("Adding Identity Indicator (MAC) flow table flow "
+                         "entry for DPAE Join to dpid=%s", self.dpid)
+        match = parser.OFPMatch(eth_dst=self.dpae2ctrl_mac)
+        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
+                                          ofproto.OFPCML_NO_BUFFER)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=self.datapath,
+                                table_id=self.ft_iim, priority=priority,
+                                match=match, instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_iim_dpae_active_bypass(self, dpae_port):
+        """
+        Add Identity Indicator (MAC) Flow Entry to
+        bypass intermediate tables for traffic from DPAE
+        (return packets from active mode TC) and goto
+        treatment table direct
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        priority = 3
+        self.logger.info("Adding Identity Indicator (MAC) flow table flow "
+                         "entry for DPAE return traffic bypass to dpid=%s",
+                         self.dpid)
+        match = parser.OFPMatch(in_port=dpae_port)
+        actions = []
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
+        mod = parser.OFPFlowMod(datapath=self.datapath,
+                                table_id=self.ft_iim, priority=priority,
+                                match=match, instructions=inst)
         self.datapath.send_msg(mod)
 
     def add_fe_iim_macport_src(self, in_port, eth_src):

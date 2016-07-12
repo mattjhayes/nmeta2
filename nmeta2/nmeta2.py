@@ -290,7 +290,7 @@ class Nmeta(app_manager.RyuApp):
         switch.flowtables.add_fe_fwd_miss()
 
         #*** Set flow entry for DPAE join packets:
-        switch.flowtables.add_fe_iig_dpae_join()
+        switch.flowtables.add_fe_iim_dpae_join()
 
         #*** Install non-DPAE static TC flows from optimised policy to switch:
         switch.flowtables.add_fe_tc_static \
@@ -471,7 +471,7 @@ class Nmeta(app_manager.RyuApp):
         if mode == 'active':
             #*** Install FE to so packets returning from DPAE in active mode
             #*** bypass learning tables and go straight to treatment:
-            switch.flowtables.add_fe_iig_dpae_active_bypass(dpae_port)
+            switch.flowtables.add_fe_iim_dpae_active_bypass(dpae_port)
 
         #*** Add any general TC flows to send to DPAE if required by policy
         #*** (i.e. statistical or payload):
