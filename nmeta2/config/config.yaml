@@ -77,8 +77,7 @@ main_policy_filename: main_policy.yaml
 #
 #========== DPAE Registration Parameters ==============
 #*** Data Path Auxiliary Engine (DPAE) parameters used
-#***  for registration packets. MAC Addresses:
-#dpae2ctrl_mac: 02:6e:6d:65:74:62
+#***  for registration packets. MAC Addresses (lower case):
 dpae2ctrl_mac: 01:80:c2:00:00:0e
 ctrl2dpae_mac: 02:6e:6d:65:74:61
 #*** Ethertype in decimal:
