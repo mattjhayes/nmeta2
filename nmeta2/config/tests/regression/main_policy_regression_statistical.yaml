@@ -53,7 +53,7 @@ port_sets:
     all_access_ports:
         - 'sw1-bordeaux':
             DPID: 1
-            ports: 2,5,7-99
+            ports: 2,5,66
         - 'Switch 1':
             DPID: 8796748549206
             ports: 1-5
