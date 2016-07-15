@@ -51,6 +51,9 @@ port_sets:
     # Port Sets control what data plane ports policies and
     #  features are applied on:
     all_access_ports:
+        - 'sw1-bordeaux':
+            DPID: 1
+            ports: 2,5,7-99
         - 'Switch 1':
             DPID: 8796748549206
             ports: 1-5
