@@ -460,7 +460,7 @@ class PortSets(object):
         for switchdict in port_set:
             switchdict2 = switchdict.itervalues().next()
             if switchdict2['DPID'] == dpid:
-                ports = switchdict2['ports']
+                ports = str(switchdict2['ports'])
                 self.logger.debug("found ports=%s dpid=%s", ports, dpid)
                 #*** turn the ports spec into a list:
                 for part in ports.split(','):

@@ -83,7 +83,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.3.2'
+        self.version = '0.3.3'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
@@ -290,7 +290,7 @@ class Nmeta(app_manager.RyuApp):
         switch.flowtables.add_fe_fwd_miss()
 
         #*** Set flow entry for DPAE join packets:
-        switch.flowtables.add_fe_iig_dpae_join()
+        switch.flowtables.add_fe_iim_dpae_join()
 
         #*** Install non-DPAE static TC flows from optimised policy to switch:
         switch.flowtables.add_fe_tc_static \
@@ -374,6 +374,7 @@ class Nmeta(app_manager.RyuApp):
         #*** Is it a DPAE Join request? If so, call function to handle it:
         if eth.src == self.ctrl2dpae_mac and eth.dst == self.dpae2ctrl_mac:
             self.dpae_join(pkt, datapath, in_port)
+            return 1
 
         self.logger.info("Learned mac=%s dpid=%s port=%s",
                                eth.src, datapath.id, in_port)
@@ -381,15 +382,24 @@ class Nmeta(app_manager.RyuApp):
         #*** Add to MAC/port pair to switch MAC table:
         switch.mactable.add(eth.src, in_port, context)
 
-        #*** Add source MAC / in port to Identity Indicator (MAC) table so
-        #***  that we don't get further packet in events for this combo:
-        switch.flowtables.add_fe_iim_macport_src(in_port, eth.src)
-
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
 
-        #*** Don't do a packet out, as it continued through the pipeline...
+        #*** Add source MAC / in port to Identity Indicator (MAC) table so
+        #***  that we don't get further packet in events for this combo:
+        switch.flowtables.add_fe_iim_macport_src(in_port, eth.src)
+
+        #*** Do a packet out to avoid going through DPAE in active mode
+        #*** which causes bad MAC learning in adjacent switches
+        #*** if forwarding entry not installed:
+
+        # TBD, send out specific port if known:
+        ofproto = msg.datapath.ofproto
+        out_port = ofproto.OFPP_FLOOD
+
+        #*** Packet out:
+        switch.packet_out(msg.data, in_port, out_port, 0, 1)
 
 
     @set_ev_cls(ofp_event.EventOFPErrorMsg,
@@ -439,6 +449,7 @@ class Nmeta(app_manager.RyuApp):
         switch = self.switches[datapath.id]
         #*** Check if Active or Passive TC Mode:
         mode = self.main_policy.tc_policies.mode
+        self.logger.info("TC mode=%s", mode)
 
         #*** Set up group table to send to DPAE:
         # NEEDS OVS 2.1 OR HIGHER SO COMMENTED OUT FOR THE MOMENT
@@ -460,7 +471,7 @@ class Nmeta(app_manager.RyuApp):
         if mode == 'active':
             #*** Install FE to so packets returning from DPAE in active mode
             #*** bypass learning tables and go straight to treatment:
-            switch.flowtables.add_fe_iig_dpae_active_bypass(dpae_port)
+            switch.flowtables.add_fe_iim_dpae_active_bypass(dpae_port)
 
         #*** Add any general TC flows to send to DPAE if required by policy
         #*** (i.e. statistical or payload):
