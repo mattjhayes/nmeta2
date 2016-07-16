@@ -49,10 +49,10 @@ main_policy_logging_level_c: DEBUG
 #
 #========== Flow Table Ids =============================
 # Don't change these, just here for a matter of record:
-#*** Identity Indicator (General):
-ft_iig: 0
 #*** Identity Indicator (MAC):
-ft_iim: 1
+ft_iim: 0
+#*** Identity Indicator (General):
+ft_iig: 1
 #*** Traffic Classification Filter:
 ft_tcf: 2
 #*** Traffic Classification:
@@ -77,8 +77,8 @@ main_policy_filename: main_policy.yaml
 #
 #========== DPAE Registration Parameters ==============
 #*** Data Path Auxiliary Engine (DPAE) parameters used
-#***  for registration packets. MAC Addresses:
-dpae2ctrl_mac: 02:6e:6d:65:74:62
+#***  for registration packets. MAC Addresses (lower case):
+dpae2ctrl_mac: 01:80:c2:00:00:0e
 ctrl2dpae_mac: 02:6e:6d:65:74:61
 #*** Ethertype in decimal:
 dpae_ethertype: 8267
