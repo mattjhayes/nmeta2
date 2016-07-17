@@ -351,6 +351,7 @@ class Nmeta(app_manager.RyuApp):
             in_port = msg.match['in_port']
             #*** TBD, deal with context:
             context = self.context_default
+            #*** Call method to delete FEs:
             switch.mactable.delete(mac, in_port, context)
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
@@ -384,6 +385,7 @@ class Nmeta(app_manager.RyuApp):
 
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
+        switch.flowtables.add_fe_fwd_special_flood(in_port, eth.src)
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
 
         #*** Add source MAC / in port to Identity Indicator (MAC) table so

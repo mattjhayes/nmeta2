@@ -337,6 +337,27 @@ class MACTable(object):
                             table_id=self.ft_fwd,
                             command=ofproto.OFPFC_DELETE,
                             idle_timeout=0, hard_timeout=0,
+                            priority=2,
+                            buffer_id=ofproto.OFP_NO_BUFFER,
+                            out_port=in_port,
+                            out_group=ofproto.OFPG_ANY,
+                            flags=ofproto.OFPFF_SEND_FLOW_REM,
+                            match=match,
+                            instructions=inst)
+        self.datapath.send_msg(mod)
+        #*** Delete FWD Special FE from switch:
+        self.logger.debug("Deleting FWD Special FE from switch: dpid=%s mac=%s"
+                            " port=%s context=%s", dpid, mac, in_port, context)
+        match = parser.OFPMatch(eth_src=mac)
+        actions = [parser.OFPActionSetField(in_port=in_port),
+                                    parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, cookie=0,
+                            cookie_mask=0,
+                            table_id=self.ft_fwd,
+                            command=ofproto.OFPFC_DELETE,
+                            idle_timeout=0, hard_timeout=0,
                             priority=1,
                             buffer_id=ofproto.OFP_NO_BUFFER,
                             out_port=in_port,
@@ -866,14 +887,44 @@ class FlowTables(object):
     def add_fe_fwd_macport_dst(self, out_port, eth_dst):
         """
         Add Flow Entry (FE) to the Forwarding flow table to
-        match destination MAC and output learned port to avoid flooding
+        match learned destination MAC and output learned port
+        to avoid flooding
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
-        #*** Priority needs to be greater than 0:
-        priority = 1
+        #*** Set Priority:
+        priority = 2
         match = parser.OFPMatch(eth_dst=eth_dst)
         actions = [parser.OFPActionOutput(out_port)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_fwd,
+                            priority=priority,
+                            idle_timeout=self.mac_fwd_idle_timeout,
+                            flags=ofproto.OFPFF_SEND_FLOW_REM,
+                            match=match,
+                            instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_fwd_special_flood(self, in_port, eth_src):
+        """
+        Special for DPAE packets:
+        Add Flow Entry (FE) to the Forwarding flow table to
+        match a learned source MAC and set the in_port field
+        and flood it. Destination MAC is not known as otherwise
+        would have matched in previous table.
+        The setting of in_port is required for packets that
+        have been reinjected by a DPAE as otherwise they
+        will break split-horizon as in_port has been changed
+        to that of the DPAE, not the original in port.
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        #*** Set Priority:
+        priority = 1
+        match = parser.OFPMatch(eth_src=eth_src)
+        actions = [parser.OFPActionSetField(in_port=in_port),
+                                    parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_fwd,
