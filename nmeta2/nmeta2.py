@@ -385,7 +385,7 @@ class Nmeta(app_manager.RyuApp):
 
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
-        switch.flowtables.add_fe_fwd_special_flood(in_port, eth.src)
+        #switch.flowtables.add_fe_fwd_special_flood(in_port, eth.src)
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
 
         #*** Add source MAC / in port to Identity Indicator (MAC) table so

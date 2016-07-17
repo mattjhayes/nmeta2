@@ -346,26 +346,26 @@ class MACTable(object):
                             instructions=inst)
         self.datapath.send_msg(mod)
         #*** Delete FWD Special FE from switch:
-        self.logger.debug("Deleting FWD Special FE from switch: dpid=%s mac=%s"
-                            " port=%s context=%s", dpid, mac, in_port, context)
-        match = parser.OFPMatch(eth_src=mac)
-        actions = [parser.OFPActionSetField(in_port=in_port),
-                                    parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
-        inst = [parser.OFPInstructionActions(
-                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
-        mod = parser.OFPFlowMod(datapath=self.datapath, cookie=0,
-                            cookie_mask=0,
-                            table_id=self.ft_fwd,
-                            command=ofproto.OFPFC_DELETE,
-                            idle_timeout=0, hard_timeout=0,
-                            priority=1,
-                            buffer_id=ofproto.OFP_NO_BUFFER,
-                            out_port=in_port,
-                            out_group=ofproto.OFPG_ANY,
-                            flags=ofproto.OFPFF_SEND_FLOW_REM,
-                            match=match,
-                            instructions=inst)
-        self.datapath.send_msg(mod)
+        #self.logger.debug("Deleting FWD Special FE from switch: dpid=%s mac=%s"
+        #                    " port=%s context=%s", dpid, mac, in_port, context)
+        #match = parser.OFPMatch(eth_src=mac)
+        #actions = [parser.OFPActionSetField(in_port=in_port),
+        #                            parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        #inst = [parser.OFPInstructionActions(
+        #                ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        #mod = parser.OFPFlowMod(datapath=self.datapath, cookie=0,
+        #                    cookie_mask=0,
+        #                    table_id=self.ft_fwd,
+        #                    command=ofproto.OFPFC_DELETE,
+        #                    idle_timeout=0, hard_timeout=0,
+        #                    priority=1,
+        #                    buffer_id=ofproto.OFP_NO_BUFFER,
+        #                    out_port=in_port,
+        #                    out_group=ofproto.OFPG_ANY,
+        #                    flags=ofproto.OFPFF_SEND_FLOW_REM,
+        #                    match=match,
+        #                    instructions=inst)
+        #self.datapath.send_msg(mod)
 
     def mac2port(self, mac, context):
         """
@@ -918,6 +918,10 @@ class FlowTables(object):
         will break split-horizon as in_port has been changed
         to that of the DPAE, not the original in port.
         """
+
+        #*** Note: Open vSwitch (v2.5) doesn't seem to support setting of
+        #*** in_port, so this is stranded code while do a work around...
+
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
         #*** Set Priority:
@@ -925,10 +929,8 @@ class FlowTables(object):
         match = parser.OFPMatch(eth_src=eth_src)
         self.logger.info("Adding special FE for match eth_src=%s setting "
                                     "in_port=%s", eth_src, in_port)
-        #actions = [parser.OFPActionSetField(in_port=in_port)]
-        # TEMP TEST OF SETTING FIELD, YES IT DOESN'T MAKE SENSE:
-        actions = [parser.OFPActionSetField(eth_dst=eth_src)]
-        #,parser.OFPActionOutput(ofproto.OFPP_FLOOD)
+        actions = [parser.OFPActionSetField(in_port=in_port),
+                                    parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_fwd,
