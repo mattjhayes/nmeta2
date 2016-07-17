@@ -923,8 +923,10 @@ class FlowTables(object):
         #*** Set Priority:
         priority = 1
         match = parser.OFPMatch(eth_src=eth_src)
-        actions = [parser.OFPActionSetField(in_port=in_port),
-                                    parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        self.logger.info("Adding special FE for match eth_src=%s setting "
+                                    "in_port=%s", eth_src, in_port)
+        actions = [parser.OFPActionSetField(in_port=in_port)]
+        #,parser.OFPActionOutput(ofproto.OFPP_FLOOD)
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_fwd,
