@@ -499,7 +499,7 @@ class Nmeta(app_manager.RyuApp):
             mac_list = switch.mactable.dump_macs(context)
             for mac in mac_list:
                 self.logger.debug("Adding previously learned mac=%s dpid=%s "
-                        "dpae_port=% to Active Mode Filter (amf)", mac, dpid,
+                        "dpae_port=%s to Active Mode Filter (amf)", mac, dpid,
                         dpae_port)
                 switch.flowtables.add_fe_amf_macport_dst(dpae_port, mac)
             #*** Install FE to so packets returning from DPAE in active mode
