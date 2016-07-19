@@ -286,6 +286,7 @@ class Nmeta(app_manager.RyuApp):
         switch.flowtables.add_fe_tcf_accepts()
         switch.flowtables.add_fe_tcf_miss()
         switch.flowtables.add_fe_tc_miss()
+        switch.flowtables.add_fe_amf_miss()
         switch.flowtables.add_fe_tt_miss()
         switch.flowtables.add_fe_fwd_miss()
 
@@ -361,7 +362,8 @@ class Nmeta(app_manager.RyuApp):
         """
         msg = ev.msg
         datapath = msg.datapath
-        switch = self.switches[datapath.id]
+        dpid = datapath.id
+        switch = self.switches[dpid]
         in_port = msg.match['in_port']
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
@@ -378,14 +380,31 @@ class Nmeta(app_manager.RyuApp):
             return 1
 
         self.logger.info("Learned mac=%s dpid=%s port=%s",
-                               eth.src, datapath.id, in_port)
+                               eth.src, dpid, in_port)
 
         #*** Add to MAC/port pair to switch MAC table:
         switch.mactable.add(eth.src, in_port, context)
 
+        #*** In active mode with a DPAE, we need to add an AMF flow entry:
+        #*** Look the DPID up in the database:
+        db_result = self.dbdpae.find_one({'dpid': dpid})
+        if db_result:
+            self.logger.info("Found DPAE for dpid=%s, adding AMF entry", dpid)
+            #*** Get the dpae port for that switch:
+            #*** TBD, handle more than one DPAE per switch
+            dpae_port = db_result['switch_port']
+            if dpae_port:
+                #*** Add FE to the Active Mode Filter (ft_amf) Flow table:
+                self.logger.info("Adding AMF entry dpid=%s dpae_port=%s "
+                                    "mac=%s", dpid, dpae_port, eth.src)
+                switch.flowtables.add_fe_amf_macport_dst(dpae_port, eth.src)
+            else:
+                self.logger.error("No DPAE switch port for dpid=%s", dpid)
+        else:
+            self.logger.debug("No DPAE found for dpid=%s", dpid)
+
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
-        #switch.flowtables.add_fe_fwd_special_flood(in_port, eth.src)
         switch.flowtables.add_fe_fwd_macport_dst(in_port, eth.src)
 
         #*** Add source MAC / in port to Identity Indicator (MAC) table so
@@ -428,17 +447,17 @@ class Nmeta(app_manager.RyuApp):
         """
         msg = ev.msg
         reason = msg.reason
-        port_no = msg.desc.port_no
+        port = msg.desc.port_no
 
         ofproto = msg.datapath.ofproto
         if reason == ofproto.OFPPR_ADD:
-            self.logger.info("port added %s", port_no)
+            self.logger.info("port added port=%s", port)
         elif reason == ofproto.OFPPR_DELETE:
-            self.logger.info("port deleted %s", port_no)
+            self.logger.info("port deleted port=%s", port)
         elif reason == ofproto.OFPPR_MODIFY:
-            self.logger.info("port modified %s", port_no)
+            self.logger.info("port modified port=%s", port)
         else:
-            self.logger.info("Illegal port state %s %s", port_no, reason)
+            self.logger.info("Illegal port state port=%s %s", port, reason)
 
     def tc_start(self, datapath, dpae_port):
         """
@@ -446,13 +465,15 @@ class Nmeta(app_manager.RyuApp):
         DPAE so that it can perform Traffic Classification analysis
         on them
         """
+        dpid = datapath.id
         self.logger.info("Starting TC to DPAE on datapath=%s, dpae_port=%s",
-                            datapath.id, dpae_port)
-        switch = self.switches[datapath.id]
+                            dpid, dpae_port)
+        switch = self.switches[dpid]
         #*** Check if Active or Passive TC Mode:
         mode = self.main_policy.tc_policies.mode
         self.logger.info("TC mode=%s", mode)
-
+        #*** TBD, deal with context:
+        context = self.context_default
         #*** Set up group table to send to DPAE:
         # NEEDS OVS 2.1 OR HIGHER SO COMMENTED OUT FOR THE MOMENT
         # ALSO NEEDS CODE THAT CAN CATER FOR MULTIPLE DPAE
@@ -471,6 +492,13 @@ class Nmeta(app_manager.RyuApp):
             switch.flowtables.add_fe_iig_dns(dpae_port)
 
         if mode == 'active':
+            #*** Install AMF entries for MACs we already know dest for:
+            mac_list = switch.mactable.dump_macs(context)
+            for mac in mac_list:
+                self.logger.debug("Adding previously learned mac=%s dpid=%s "
+                        "dpae_port=% to Active Mode Filter", mac, dpid,
+                        dpae_port)
+                switch.flowtables.add_fe_amf_macport_dst(dpae_port, mac)
             #*** Install FE to so packets returning from DPAE in active mode
             #*** bypass learning tables and go straight to treatment:
             switch.flowtables.add_fe_iim_dpae_active_bypass(dpae_port)
@@ -482,7 +510,7 @@ class Nmeta(app_manager.RyuApp):
                         dpae_port, mode)
 
         self.logger.info("TC started to DPAE on datapath=%s, dpae_port=%s",
-                            datapath.id, dpae_port)
+                            dpid, dpae_port)
         _results = {"status": "tc_started",
                         "mode": mode}
         return _results
