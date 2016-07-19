@@ -386,22 +386,25 @@ class Nmeta(app_manager.RyuApp):
         switch.mactable.add(eth.src, in_port, context)
 
         #*** In active mode with a DPAE, we need to add an AMF flow entry:
-        #*** Look the DPID up in the database:
-        db_result = self.dbdpae.find_one({'dpid': dpid})
-        if db_result:
-            self.logger.info("Found DPAE for dpid=%s, adding AMF entry", dpid)
-            #*** Get the dpae port for that switch:
-            #*** TBD, handle more than one DPAE per switch
-            dpae_port = db_result['switch_port']
-            if dpae_port:
-                #*** Add FE to the Active Mode Filter (ft_amf) Flow table:
-                self.logger.info("Adding AMF entry dpid=%s dpae_port=%s "
+        if self.main_policy.tc_policies.mode == 'active':
+            #*** Look the DPID up in the database:
+            db_result = self.dbdpae.find_one({'dpid': dpid})
+            if db_result:
+                self.logger.info("Found DPAE for dpid=%s, adding AMF entry",
+                                                                    dpid)
+                #*** Get the dpae port for that switch:
+                #*** TBD, handle more than one DPAE per switch
+                dpae_port = db_result['switch_port']
+                if dpae_port:
+                    #*** Add FE to the Active Mode Filter (ft_amf) Flow table:
+                    self.logger.info("Adding AMF entry dpid=%s dpae_port=%s "
                                     "mac=%s", dpid, dpae_port, eth.src)
-                switch.flowtables.add_fe_amf_macport_dst(dpae_port, eth.src)
+                    switch.flowtables.add_fe_amf_macport_dst(dpae_port,
+                                                                    eth.src)
+                else:
+                    self.logger.error("No DPAE switch port for dpid=%s", dpid)
             else:
-                self.logger.error("No DPAE switch port for dpid=%s", dpid)
-        else:
-            self.logger.debug("No DPAE found for dpid=%s", dpid)
+                self.logger.debug("No DPAE found for dpid=%s", dpid)
 
         #*** Add source MAC / in port to Forwarding table as destinations so
         #***  that we don't flood them:
@@ -496,7 +499,7 @@ class Nmeta(app_manager.RyuApp):
             mac_list = switch.mactable.dump_macs(context)
             for mac in mac_list:
                 self.logger.debug("Adding previously learned mac=%s dpid=%s "
-                        "dpae_port=% to Active Mode Filter", mac, dpid,
+                        "dpae_port=% to Active Mode Filter (amf)", mac, dpid,
                         dpae_port)
                 switch.flowtables.add_fe_amf_macport_dst(dpae_port, mac)
             #*** Install FE to so packets returning from DPAE in active mode

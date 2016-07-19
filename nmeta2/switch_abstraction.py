@@ -778,7 +778,7 @@ class FlowTables(object):
     def add_fe_tc_miss(self):
         """
         Add Traffic Classification flow table miss Flow Entry
-        to send packets to next flow table
+        to send packets to Traffic Treatment Flow Table
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -788,7 +788,7 @@ class FlowTables(object):
         actions = []
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tc + 1)]
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
         mod = parser.OFPFlowMod(datapath=self.datapath,
                                 table_id=self.ft_tc, priority=0,
                                 match=match, instructions=inst)
