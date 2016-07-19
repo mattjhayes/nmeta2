@@ -7,7 +7,7 @@ tc_policies:
         comment: Basic TC Use Case
         rule_set: tc_ruleset_1
         port_set: all_access_ports
-        mode: passive
+        mode: active
 #
 tc_rules:
     # Traffic Classification Rulesets and Rules
