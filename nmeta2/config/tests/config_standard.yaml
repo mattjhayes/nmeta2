@@ -57,10 +57,12 @@ ft_iig: 1
 ft_tcf: 2
 #*** Traffic Classification:
 ft_tc: 3
+#*** Active Mode Filter:
+ft_amf: 4
 #*** Traffic Treatment:
-ft_tt: 4
+ft_tt: 5
 #*** Forwarding:
-ft_fwd: 5
+ft_fwd: 6
 #*** Group for DPAE:
 ft_group_dpae: 1
 #
