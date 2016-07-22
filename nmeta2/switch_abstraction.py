@@ -247,6 +247,7 @@ class MACTable(object):
         self.ft_iim = self._config.get_value("ft_iim")
         self.ft_tcf = self._config.get_value("ft_tcf")
         self.ft_tc = self._config.get_value("ft_tc")
+        self.ft_amf = self._config.get_value("ft_amf")
         self.ft_tt = self._config.get_value("ft_tt")
         self.ft_fwd = self._config.get_value("ft_fwd")
         self.ft_group_dpae = self._config.get_value("ft_group_dpae")
@@ -325,6 +326,27 @@ class MACTable(object):
                             match=match,
                             instructions=inst)
         self.datapath.send_msg(mod)
+        #*** Delete AMF FE from switch:
+        self.logger.debug("Deleting AMF FE from switch: dpid=%s mac=%s port=%s"
+                            " context=%s", dpid, mac, in_port, context)
+        match = parser.OFPMatch(eth_dst=mac)
+        actions = [parser.OFPActionOutput(in_port)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, cookie=0,
+                            cookie_mask=0,
+                            table_id=self.ft_amf,
+                            command=ofproto.OFPFC_DELETE,
+                            idle_timeout=0, hard_timeout=0,
+                            priority=2,
+                            buffer_id=ofproto.OFP_NO_BUFFER,
+                            out_port=in_port,
+                            out_group=ofproto.OFPG_ANY,
+                            flags=ofproto.OFPFF_SEND_FLOW_REM,
+                            match=match,
+                            instructions=inst)
+        self.datapath.send_msg(mod)
+
         #*** Delete FWD FE from switch:
         self.logger.debug("Deleting FWD FE from switch: dpid=%s mac=%s port=%s"
                             " context=%s", dpid, mac, in_port, context)
@@ -337,7 +359,7 @@ class MACTable(object):
                             table_id=self.ft_fwd,
                             command=ofproto.OFPFC_DELETE,
                             idle_timeout=0, hard_timeout=0,
-                            priority=1,
+                            priority=2,
                             buffer_id=ofproto.OFP_NO_BUFFER,
                             out_port=in_port,
                             out_group=ofproto.OFPG_ANY,
@@ -345,6 +367,22 @@ class MACTable(object):
                             match=match,
                             instructions=inst)
         self.datapath.send_msg(mod)
+
+    def dump_macs(self, context):
+        """
+        Return a list of all known MAC addresses for a
+        given context on this switch
+        """
+        nmeta = self._nmeta
+        dpid = self.dpid
+        macs = []
+        db_cursor = nmeta.dbidmac.find({'dpid': dpid, 'context': context})
+        if db_cursor:
+            for document in db_cursor:
+                mac = document['mac']
+                if mac:
+                    macs.append(mac)
+        return macs
 
     def mac2port(self, mac, context):
         """
@@ -398,6 +436,7 @@ class FlowTables(object):
         self.ft_iim = self._config.get_value("ft_iim")
         self.ft_tcf = self._config.get_value("ft_tcf")
         self.ft_tc = self._config.get_value("ft_tc")
+        self.ft_amf = self._config.get_value("ft_amf")
         self.ft_tt = self._config.get_value("ft_tt")
         self.ft_fwd = self._config.get_value("ft_fwd")
         self.ft_group_dpae = self._config.get_value("ft_group_dpae")
@@ -671,7 +710,7 @@ class FlowTables(object):
         actions = []
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tcf + 2)]
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
         #*** Needs higher priority than TC rules in same table:
         priority = 2
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tcf,
@@ -720,8 +759,7 @@ class FlowTables(object):
     def add_fe_tcf_miss(self):
         """
         Add Traffic Classification Filter flow table miss Flow Entry
-        to send packets to next flow table + 1 (i.e. skip the TC
-        flow table)
+        to send packets to Traffic Treatment (ft_tt) table
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -731,7 +769,7 @@ class FlowTables(object):
         actions = []
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tcf + 2)]
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
         mod = parser.OFPFlowMod(datapath=self.datapath,
                                 table_id=self.ft_tcf, priority=0,
                                 match=match, instructions=inst)
@@ -740,7 +778,7 @@ class FlowTables(object):
     def add_fe_tc_miss(self):
         """
         Add Traffic Classification flow table miss Flow Entry
-        to send packets to next flow table
+        to send packets to Traffic Treatment Flow Table
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -750,9 +788,50 @@ class FlowTables(object):
         actions = []
         inst = [parser.OFPInstructionActions(
                         ofproto.OFPIT_APPLY_ACTIONS, actions),
-                        parser.OFPInstructionGotoTable(self.ft_tc + 1)]
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
         mod = parser.OFPFlowMod(datapath=self.datapath,
                                 table_id=self.ft_tc, priority=0,
+                                match=match, instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_amf_macport_dst(self, dpae_port, eth_dst):
+        """
+        Add Flow Entry (FE) to the Active Mode Filter flow table to
+        send packets destined for learned destination MACs out the
+        port to the DPAE
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        #*** Set Priority:
+        priority = 1
+        match = parser.OFPMatch(eth_dst=eth_dst)
+        actions = [parser.OFPActionOutput(dpae_port)]
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_amf,
+                            priority=priority,
+                            idle_timeout=self.mac_fwd_idle_timeout,
+                            flags=ofproto.OFPFF_SEND_FLOW_REM,
+                            match=match,
+                            instructions=inst)
+        self.datapath.send_msg(mod)
+
+    def add_fe_amf_miss(self):
+        """
+        Add Active Mode Filter flow table miss Flow Entry
+        to send packets to next flow table
+        """
+        ofproto = self.datapath.ofproto
+        parser = self.datapath.ofproto_parser
+        self.logger.info("Adding Active Mode Filter flow table miss"
+                         " flow entry to dpid=%s", self.dpid)
+        match = parser.OFPMatch()
+        actions = []
+        inst = [parser.OFPInstructionActions(
+                        ofproto.OFPIT_APPLY_ACTIONS, actions),
+                        parser.OFPInstructionGotoTable(self.ft_tt)]
+        mod = parser.OFPFlowMod(datapath=self.datapath,
+                                table_id=self.ft_amf, priority=0,
                                 match=match, instructions=inst)
         self.datapath.send_msg(mod)
 
@@ -866,12 +945,13 @@ class FlowTables(object):
     def add_fe_fwd_macport_dst(self, out_port, eth_dst):
         """
         Add Flow Entry (FE) to the Forwarding flow table to
-        match destination MAC and output learned port to avoid flooding
+        match learned destination MAC and output learned port
+        to avoid flooding
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
-        #*** Priority needs to be greater than 0:
-        priority = 1
+        #*** Set Priority:
+        priority = 2
         match = parser.OFPMatch(eth_dst=eth_dst)
         actions = [parser.OFPActionOutput(out_port)]
         inst = [parser.OFPInstructionActions(
@@ -939,8 +1019,9 @@ class FlowTables(object):
         Install DPAE Traffic Classification (TC) flows from
         optimised TC policy to switch (i.e. Flow Entries that
         invoke actions that need for DPAE to classify).
-        Mode is either active or passive. For the former, we
-        don't do a goto-table instruction.
+        Mode is either active or passive.
+        Passive Mode: Output to DPAE and Goto-Table Traffic Treatment (ft_tt)
+        Active Mode: Goto-Table Active Mode Filter (ft_amf)
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
@@ -974,17 +1055,20 @@ class FlowTables(object):
                     #*** Set QoS Output Queue:
                     queue_num = fe_action['Set-Queue']
                     actions.append(parser.OFPActionSetQueue(queue_num))
-                #*** Set the output port in any parser.OFPActionOutput actions:
-                if 'parser.OFPActionOutput(dpae_port)' in fe_action:
+                #*** Set the output port in any parser.OFPActionOutput actions
+                #***  where mode is passive:
+                if 'parser.OFPActionOutput(dpae_port)' in fe_action and \
+                            mode == 'passive':
                     actions.append(parser.OFPActionOutput(dpae_port))
                 #*** Build the instructions for the FE:
                 if mode == 'passive':
                     inst = [parser.OFPInstructionActions(
                             ofproto.OFPIT_APPLY_ACTIONS, actions),
-                            parser.OFPInstructionGotoTable(flow_table + 1)]
+                            parser.OFPInstructionGotoTable(self.ft_tt)]
                 elif mode == 'active':
                     inst = [parser.OFPInstructionActions(
-                            ofproto.OFPIT_APPLY_ACTIONS, actions)]
+                            ofproto.OFPIT_APPLY_ACTIONS, actions),
+                            parser.OFPInstructionGotoTable(self.ft_amf)]
                 else:
                     #*** This is a bad condition...
                     self.logger.error("unknown mode, mode=%s", mode)
