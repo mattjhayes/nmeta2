@@ -362,6 +362,7 @@ class Nmeta(app_manager.RyuApp):
         """
         msg = ev.msg
         datapath = msg.datapath
+        ofproto = msg.datapath.ofproto
         dpid = datapath.id
         switch = self.switches[dpid]
         in_port = msg.match['in_port']
@@ -418,9 +419,11 @@ class Nmeta(app_manager.RyuApp):
         #*** which causes bad MAC learning in adjacent switches
         #*** if forwarding entry not installed:
 
-        # TBD, send out specific port if known:
-        ofproto = msg.datapath.ofproto
-        out_port = ofproto.OFPP_FLOOD
+        # Send out specific port if known:
+        port_number = switch.mactable.mac2port(eth.dst, context)
+        #*** TBD, use constant from the switchabstraction module...
+        if port_number == 999999999:
+            out_port = ofproto.OFPP_FLOOD
 
         #*** Packet out:
         switch.packet_out(msg.data, in_port, out_port, 0, 1)
