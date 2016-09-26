@@ -18,8 +18,6 @@ This module is part of the nmeta suite running on top of Ryu SDN
 controller to provide network identity and flow metadata.
 .
 It provides methods for RESTful API connectivity.
-.
-Version 2.x Toulouse Code
 """
 
 import logging
@@ -465,7 +463,8 @@ class RESTAPIController(ControllerBase):
             return ({'status': 400, 'msg': dpae_req_body.error})
 
         #*** Check version compatibility:
-        if dpae_req_body['dpae_version'] != nmeta.version:
+        if not version_compare(dpae_req_body['dpae_version'],
+                                                                nmeta.version):
             self.logger.warning("Possible version compatibility issue. "
                         "DPAE_version=%s nmeta2_version=%s",
                         dpae_req_body['dpae_version'], nmeta.version)
@@ -709,6 +708,18 @@ class JSON_Body(object):
             return self.req_body[key]
         else:
             return 0
+
+def version_compare(version1, version2):
+    """
+    Compare two semantic version numbers and return 1 if they
+    are the same major version number
+    """
+    (major1, minor1, patch1) = version1.split('.')
+    (major2, minor2, patch2) = version1.split('.')
+    if major1 == major2:
+        return 1
+    else:
+        return 0
 
 class Api(object):
     """

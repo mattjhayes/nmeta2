@@ -16,12 +16,10 @@
 """
 This module is part of the nmeta suite running on top of Ryu SDN
 controller to provide network identity and flow metadata.
-.
+
 It provides an object for the main policy
 and includes ingesting the policy from file on class instatiation
 and validating its syntax.
-.
-Version 2.x Toulouse Code
 """
 
 #*** Logging imports:

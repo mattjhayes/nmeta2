@@ -18,6 +18,7 @@
 This module is part of the nmeta suite running on top of the
 Ryu SDN controller to provide network identity and flow
 (traffic classification) metadata.
+
 It expects a file called "config.yaml" to be in the same directory
 containing properly formed YAML
 """

@@ -18,10 +18,8 @@ This is the main module of the nmeta2 suite
 running on top of the Ryu SDN controller to provide network identity
 and flow (traffic classification) metadata.
 .
-It supports OpenFlow v1.3 switches and v0.2.x Data Path Auxiliary Engines
+It supports OpenFlow v1.3 switches and Data Path Auxiliary Engines
 (DPAE)
-.
-Version 2.x Toulouse Code
 .
 Do not use this code for production deployments - it is proof
 of concept code and carries no warrantee whatsoever.
@@ -83,7 +81,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.3.4'
+        self.version = '0.3.5'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:
@@ -362,6 +360,7 @@ class Nmeta(app_manager.RyuApp):
         """
         msg = ev.msg
         datapath = msg.datapath
+        ofproto = msg.datapath.ofproto
         dpid = datapath.id
         switch = self.switches[dpid]
         in_port = msg.match['in_port']
@@ -418,9 +417,11 @@ class Nmeta(app_manager.RyuApp):
         #*** which causes bad MAC learning in adjacent switches
         #*** if forwarding entry not installed:
 
-        # TBD, send out specific port if known:
-        ofproto = msg.datapath.ofproto
-        out_port = ofproto.OFPP_FLOOD
+        # Send out specific port if known:
+        port_number = switch.mactable.mac2port(eth.dst, context)
+        #*** TBD, use constant from the switchabstraction module...
+        if port_number == 999999999:
+            out_port = ofproto.OFPP_FLOOD
 
         #*** Packet out:
         switch.packet_out(msg.data, in_port, out_port, 0, 1)

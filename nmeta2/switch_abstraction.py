@@ -15,8 +15,8 @@
 
 """
 This module is part of the nmeta suite running on top of Ryu SDN controller.
-It provides functions that abstract the details of OpenFlow calls, including
-differences between OpenFlow versions where practical
+
+It provides functions that abstract the details of OpenFlow switches
 """
 
 #*** Logging Imports:
