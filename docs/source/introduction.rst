@@ -6,10 +6,13 @@ The nmeta2 *(pronounced en-meta two)* project is founded on the belief that
 innovation in networks requires a foundation layer of knowledge
 about both the participants and their types of conversation.
 
+Background
+----------
+
 Today, networks generally have only a limited view of participants
 and conversation types
 
-TBD - updated image of concept
+.. image:: images/nmeta2_concept.png
 
 The goal of the nmeta2 project is to produce network metadata enriched with
 participant identities and conversation types to provide a foundation for
@@ -20,8 +23,6 @@ and ability to adapt to new purposes through extensibility.
 
 Enriched network metadata has a number of uses, including classifying flows
 for QoS, billing, traffic engineering, troubleshooting and security.
-
-TBD - image of metadata
 
 Nmeta2 is a research platform for traffic classification on Software Defined
 Networking (SDN).  It runs on top of the Ryu SDN controller
@@ -44,7 +45,7 @@ yet, or not finished.
 Feature Enhancement Wishlist
 ----------------------------
 
-See `Issues <https://github.com/mattjhayes/nmeta/issues>`_ for list of
+See `Issues <https://github.com/mattjhayes/nmeta2/issues>`_ for list of
 enhancements and bugs
 
 Privacy Considerations
