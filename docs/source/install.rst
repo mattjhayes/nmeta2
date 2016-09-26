@@ -72,6 +72,13 @@ Install simplejson
 
   sudo pip install simplejson
 
+Install mock
+============
+
+.. code-block:: text
+
+  sudo pip install -U mock
+
 ***************
 Install MongoDB
 ***************

@@ -83,7 +83,7 @@ class Nmeta(app_manager.RyuApp):
         super(Nmeta, self).__init__(*args, **kwargs)
 
         #*** Version number for compatibility checks:
-        self.version = '0.3.4'
+        self.version = '0.3.5'
 
         #*** Instantiate config class which imports configuration file
         #*** config.yaml and provides access to keys/values:

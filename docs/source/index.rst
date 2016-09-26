@@ -17,6 +17,7 @@ Contents:
 
    introduction
    install
+   modules
 
 Indices and tables
 ==================
