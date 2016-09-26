@@ -18,8 +18,6 @@ This module is part of the nmeta suite running on top of Ryu SDN
 controller to provide network identity and flow metadata.
 .
 It provides methods for RESTful API connectivity.
-.
-Version 2.x Toulouse Code
 """
 
 import logging

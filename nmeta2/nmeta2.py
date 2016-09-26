@@ -18,10 +18,8 @@ This is the main module of the nmeta2 suite
 running on top of the Ryu SDN controller to provide network identity
 and flow (traffic classification) metadata.
 .
-It supports OpenFlow v1.3 switches and v0.2.x Data Path Auxiliary Engines
+It supports OpenFlow v1.3 switches and Data Path Auxiliary Engines
 (DPAE)
-.
-Version 2.x Toulouse Code
 .
 Do not use this code for production deployments - it is proof
 of concept code and carries no warrantee whatsoever.
