@@ -16,12 +16,10 @@
 """
 This module is part of the nmeta suite running on top of Ryu SDN
 controller to provide network identity and flow metadata.
-.
+
 It provides an object for the main policy
 and includes ingesting the policy from file on class instatiation
 and validating its syntax.
-.
-Version 2.x Toulouse Code
 """
 
 #*** Logging imports:
@@ -261,7 +259,7 @@ class TCRule(object):
                                'identity_lldp_systemname_re': 'String',
                                'identity_service_dns': 'String',
                                'identity_service_dns_re': 'String',
-                               'payload_type': 'String',
+                               'payload': 'String',
                                'statistical': 'String',
                                'match_type': 'MatchType',
                                'conditions_list': 'PolicyConditions'}
@@ -460,7 +458,7 @@ class PortSets(object):
         for switchdict in port_set:
             switchdict2 = switchdict.itervalues().next()
             if switchdict2['DPID'] == dpid:
-                ports = switchdict2['ports']
+                ports = str(switchdict2['ports'])
                 self.logger.debug("found ports=%s dpid=%s", ports, dpid)
                 #*** turn the ports spec into a list:
                 for part in ports.split(','):
@@ -491,7 +489,7 @@ class Optimise(object):
                     'identity_lldp_systemname_re': 'identity',
                     'identity_service_dns': 'identity',
                     'identity_service_dns_re': 'identity',
-                    'payload_type': 'payload',
+                    'payload': 'payload',
                     'statistical': 'statistical'
                         }
 

@@ -18,8 +18,6 @@ This module is part of the nmeta suite running on top of Ryu SDN
 controller to provide network identity and flow metadata.
 .
 It provides methods for RESTful API connectivity.
-.
-Version 2.x Toulouse Code
 """
 
 import logging
@@ -71,24 +69,24 @@ def rest_command(func):
         except SyntaxError as e:
             status = 400
             details = e.msg
-            print("ERROR: SyntaxError in _rest_command, status ", status,
-                                    "msg ", details)
+            print "ERROR: SyntaxError in _rest_command, status ", status, \
+                                    "msg ", details
             msg = {REST_RESULT: REST_NG,
                REST_DETAILS: details}
             return Response(status=status, body=json.dumps(msg))
         except (ValueError, NameError) as e:
             status = 400
             details = e.message
-            print("ERROR: ValueError or NameError in _rest_command, status ",
-                                    status, "msg ", details)
+            print "ERROR: ValueError or NameError in _rest_command, status ", \
+                                    status, "msg ", details
             msg = {REST_RESULT: REST_NG,
                REST_DETAILS: details}
             return Response(status=status, body=json.dumps(msg))
         except NotFoundError as msg:
             status = 404
             details = str(msg)
-            print("ERROR: NotFoundError in _rest_command, status ", status,
-                                    "msg ", details)
+            print "ERROR: NotFoundError in _rest_command, status ", status, \
+                                    "msg ", details
             msg = {REST_RESULT: REST_NG,
                REST_DETAILS: details}
             return Response(status=status, body=json.dumps(msg))
@@ -99,8 +97,8 @@ def rest_command(func):
             details = "exc_type=" + str(exc_type) + " exc_value=" + \
                         str(exc_value) + " exc_traceback=" + \
                         str(exc_traceback)
-            print("ERROR: NotFoundError in _rest_command, status ", status,
-                                    "msg ", details)
+            print "ERROR: NotFoundError in _rest_command, status ", status, \
+                                    "msg ", details
             msg = {REST_RESULT: REST_NG,
                REST_DETAILS: details}
             return Response(status=status, body=json.dumps(msg))
@@ -350,7 +348,7 @@ class RESTAPIController(ControllerBase):
         (HTTP DELETE method)
         """
         #*** TBD
-        print("In rest_dpae_delete")
+        print "In rest_dpae_delete"
 
     @rest_command
     def rest_dpae_send_sniff_conf_pkt(self, req, uri_uuid, **kwargs):
@@ -465,7 +463,8 @@ class RESTAPIController(ControllerBase):
             return ({'status': 400, 'msg': dpae_req_body.error})
 
         #*** Check version compatibility:
-        if dpae_req_body['dpae_version'] != nmeta.version:
+        if not version_compare(dpae_req_body['dpae_version'],
+                                                                nmeta.version):
             self.logger.warning("Possible version compatibility issue. "
                         "DPAE_version=%s nmeta2_version=%s",
                         dpae_req_body['dpae_version'], nmeta.version)
@@ -709,6 +708,18 @@ class JSON_Body(object):
             return self.req_body[key]
         else:
             return 0
+
+def version_compare(version1, version2):
+    """
+    Compare two semantic version numbers and return 1 if they
+    are the same major version number
+    """
+    (major1, minor1, patch1) = version1.split('.')
+    (major2, minor2, patch2) = version1.split('.')
+    if major1 == major2:
+        return 1
+    else:
+        return 0
 
 class Api(object):
     """

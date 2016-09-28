@@ -34,6 +34,9 @@ main_policy_logging_level_s: INFO
 #*** Set to 1 if want to log to console:
 console_log_enabled: 1
 #
+#*** Set to 1 if you want colorised logs in terminal:
+coloredlogs_enabled: 0
+#
 #*** Console Log Format:
 console_format: "%(levelname)s: %(name)s %(funcName)s: %(message)s"
 #
@@ -46,22 +49,24 @@ main_policy_logging_level_c: DEBUG
 #
 #========== Flow Table Ids =============================
 # Don't change these, just here for a matter of record:
-#*** Identity Indicator (General):
-ft_iig: 0
 #*** Identity Indicator (MAC):
-ft_iim: 1
+ft_iim: 0
+#*** Identity Indicator (General):
+ft_iig: 1
 #*** Traffic Classification Filter:
 ft_tcf: 2
 #*** Traffic Classification:
 ft_tc: 3
+#*** Active Mode Filter:
+ft_amf: 4
 #*** Traffic Treatment:
-ft_tt: 4
+ft_tt: 5
 #*** Forwarding:
-ft_fwd: 5
+ft_fwd: 6
 #*** Group for DPAE:
 ft_group_dpae: 1
 #
-#========== Mongodb Database ==========================
+#========== MongoDB Database ==========================
 mongo_addr: localhost
 mongo_port: 27017
 #
@@ -74,8 +79,8 @@ main_policy_filename: main_policy.yaml
 #
 #========== DPAE Registration Parameters ==============
 #*** Data Path Auxiliary Engine (DPAE) parameters used
-#***  for registration packets. MAC Addresses:
-dpae2ctrl_mac: 02:6e:6d:65:74:62
+#***  for registration packets. MAC Addresses (lower case):
+dpae2ctrl_mac: 01:80:c2:00:00:0e
 ctrl2dpae_mac: 02:6e:6d:65:74:61
 #*** Ethertype in decimal:
 dpae_ethertype: 8267
@@ -85,9 +90,7 @@ dpae_ethertype: 8267
 #***  First is for identity indicator table and second
 #***  is for MAC forwarding table:
 mac_iim_idle_timeout: 300
-#*** Don't timeout the forwarding as it can be shadowed. Stale entries are
-#***  removed by other means:
-mac_fwd_idle_timeout: 0
+mac_fwd_idle_timeout: 300
 #
 #*** Timeout for an FE that suppresses sending a specific
 #*** flow to a DPAE. Can be relatively low value as should

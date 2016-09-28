@@ -18,6 +18,7 @@
 This module is part of the nmeta suite running on top of the
 Ryu SDN controller to provide network identity and flow
 (traffic classification) metadata.
+
 It expects a file called "config.yaml" to be in the same directory
 containing properly formed YAML
 """
@@ -51,20 +52,22 @@ CONFIG_TEMPLATE = \
     'syslog_format': \
         "sev=%(levelname)s module=%(name)s func=%(funcName)s %(message)s",
     'console_log_enabled': 1,
+    'coloredlogs_enabled': 1,
     'console_format': "%(levelname)s: %(name)s %(funcName)s: %(message)s",
-    'ft_iig': 0,
-    'ft_iim': 1,
+    'ft_iim': 0,
+    'ft_iig': 1,
     'ft_tcf': 2,
     'ft_tc': 3,
-    'ft_tt': 4,
-    'ft_fwd': 5,
+    'ft_amf': 4,
+    'ft_tt': 5,
+    'ft_fwd': 6,
     'ft_group_dpae': 1,
     'mongo_addr': 'localhost',
     'mongo_port': 27017,
     'context_default': 1,
     'config_directory': 'config',
     'main_policy_filename': 'main_policy.yaml',
-    'dpae2ctrl_mac': '02:6e:6d:65:74:62',
+    'dpae2ctrl_mac': '01:80:c2:00:00:0e',
     'ctrl2dpae_mac': '02:6e:6d:65:74:61',
     'dpae_ethertype': '8267',
     'mac_iim_idle_timeout': 300,
