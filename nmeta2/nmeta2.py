@@ -417,10 +417,9 @@ class Nmeta(app_manager.RyuApp):
         #*** which causes bad MAC learning in adjacent switches
         #*** if forwarding entry not installed:
 
-        # Send out specific port if known:
-        port_number = switch.mactable.mac2port(eth.dst, context)
-        #*** TBD, use constant from the switchabstraction module...
-        if port_number == 999999999:
+        # Send out specific port if known or flood:
+        out_port = switch.mactable.mac2port(eth.dst, context)
+        if out_port == switch_abstraction.PORT_NOT_FOUND:
             out_port = ofproto.OFPP_FLOOD
 
         #*** Packet out:
