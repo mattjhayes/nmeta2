@@ -1,2 +1,2 @@
-.idea
-*.pyc
+nmeta2/*.pyc
+test/__pycache__/
