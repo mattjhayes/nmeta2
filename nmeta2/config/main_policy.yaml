@@ -29,6 +29,15 @@ tc_rules:
           actions:
             set_qos: classifier_return
             set_desc: description="Statistical TC Control of Traffic QoS Treatment"
+        - comment: DDoS Detection (Machine Learning)
+          match_type: any
+          conditions_list:
+              - match_type: any
+                machine_learning: "ml_ddos_random_forest"
+          actions:
+            set_qos: classifier_return
+            set_desc: description="Detection of DDoS attack traffic."
+
 #
 identity:
     # Control how identity information is collected

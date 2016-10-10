@@ -261,6 +261,7 @@ class TCRule(object):
                                'identity_service_dns_re': 'String',
                                'payload': 'String',
                                'statistical': 'String',
+                               'machine_learning': 'String',
                                'match_type': 'MatchType',
                                'conditions_list': 'PolicyConditions'}
 
@@ -490,7 +491,8 @@ class Optimise(object):
                     'identity_service_dns': 'identity',
                     'identity_service_dns_re': 'identity',
                     'payload': 'payload',
-                    'statistical': 'statistical'
+                    'statistical': 'statistical',
+                    'machine_learning': 'machine_learning'
                         }
 
     def __init__(self, logger, policy):
@@ -627,6 +629,14 @@ class Optimise(object):
             return flow_entry
         elif tc_type == 'statistical':
             #*** Return an FE that sends traffic to DPAE:
+            flow_entry['match'] = 'any'
+            flow_entry['table'] = 'ft_tc'
+            flow_entry['action'] = 'parser.OFPActionOutput(dpae_port)'
+            flow_entry['instruction'] = 'apply actions, gototable +1'
+            flow_entry['install_type'] = 'to_dpae'
+            return flow_entry
+        elif tc_type == "machine_learning":
+            # Return a RE that sends traffic to DPAE
             flow_entry['match'] = 'any'
             flow_entry['table'] = 'ft_tc'
             flow_entry['action'] = 'parser.OFPActionOutput(dpae_port)'
