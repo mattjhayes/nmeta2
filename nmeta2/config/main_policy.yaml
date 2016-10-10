@@ -33,7 +33,7 @@ tc_rules:
           match_type: any
           conditions_list:
               - match_type: any
-                machine_learning: "ml_ddos_random_forest"
+                statistical: "ml_ddos_random_forest"
           actions:
             set_qos: classifier_return
             set_desc: description="Detection of DDoS attack traffic."
