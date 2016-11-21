@@ -7,7 +7,7 @@ tc_policies:
         comment: Policy for evaluating statistical DDoS classifier.
         rule_set: tc_ruleset_1
         port_set: all_access_ports
-        mode: active
+        mode: passive
 #
 tc_rules:
     # Traffic Classification Rulesets and Rules
