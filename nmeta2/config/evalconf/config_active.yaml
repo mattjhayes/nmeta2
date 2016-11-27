@@ -1,0 +1,101 @@
+#*** Traffic Classification Config for nmeta
+#*** Written in YAML
+#
+#*** max bytes of new flow packets to send to controller:
+miss_send_len: 1500
+#
+#*** Tell switch how to handle fragments (see OpenFlow spec)
+ofpc_frag: 0
+#
+#========== SYSLOG ==================================
+#*** Set to 1 if want to log to syslog:
+syslog_enabled: 1
+#
+#*** Where to send syslog (use localhost to keep on-box):
+loghost: localhost
+#
+#*** Port number to send on:
+logport: 514
+#
+#*** Facility to use:
+logfacility: 19
+#
+#*** Syslog Log Format:
+syslog_format: "sev=%(levelname)s module=%(name)s func=%(funcName)s %(message)s"
+#
+#*** Syslog Logging Levels Per Module
+#*** Values can be one of CRITICAL|ERROR|WARNING|INFO|DEBUG:
+nmeta_logging_level_s: INFO
+sa_logging_level_s: INFO
+api_logging_level_s: INFO
+main_policy_logging_level_s: INFO
+#
+#========== CONSOLE LOGGING =========================
+#*** Set to 1 if want to log to console:
+console_log_enabled: 1
+#
+#*** Set to 1 if you want colorised logs in terminal:
+coloredlogs_enabled: 0
+#
+#*** Console Log Format:
+console_format: "%(levelname)s: %(name)s %(funcName)s: %(message)s"
+#
+#*** Console Logging Levels Per Module
+#*** Values can be one of CRITICAL|ERROR|WARNING|INFO|DEBUG:
+nmeta_logging_level_c: DEBUG
+sa_logging_level_c: DEBUG
+api_logging_level_c: DEBUG
+main_policy_logging_level_c: DEBUG
+#
+#========== Flow Table Ids =============================
+# Don't change these, just here for a matter of record:
+#*** Identity Indicator (MAC):
+ft_iim: 0
+#*** Identity Indicator (General):
+ft_iig: 1
+#*** Traffic Classification Filter:
+ft_tcf: 2
+#*** Traffic Classification:
+ft_tc: 3
+#*** Active Mode Filter:
+ft_amf: 4
+#*** Traffic Treatment:
+ft_tt: 5
+#*** Forwarding:
+ft_fwd: 6
+#*** Group for DPAE:
+ft_group_dpae: 1
+#
+#========== MongoDB Database ==========================
+mongo_addr: localhost
+mongo_port: 27017
+#
+#========== Context ===================================
+context_default: 1
+#
+#================ Main Policy ========
+config_directory: config
+main_policy_filename: main_policy.yaml
+#
+#========== DPAE Registration Parameters ==============
+#*** Data Path Auxiliary Engine (DPAE) parameters used
+#***  for registration packets. MAC Addresses (lower case):
+dpae2ctrl_mac: 01:80:c2:00:00:0e
+ctrl2dpae_mac: 02:6e:6d:65:74:61
+#*** Ethertype in decimal:
+dpae_ethertype: 8267
+#
+#========== Flow Entry Idle Timeouts =================
+#*** Maximum idle time for flow entries in seconds.
+#***  First is for identity indicator table and second
+#***  is for MAC forwarding table:
+mac_iim_idle_timeout: 300
+mac_fwd_idle_timeout: 300
+#
+#*** Timeout for an FE that suppresses sending a specific
+#*** flow to a DPAE. Can be relatively low value as should
+#*** stay fresh due to traffic while flow is live
+suppress_idle_timeout: 5
+#
+#*** Timeout for a dynamic QoS treatment FE:
+fe_idle_timeout_qos: 30

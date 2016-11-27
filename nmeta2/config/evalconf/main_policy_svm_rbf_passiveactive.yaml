@@ -7,16 +7,16 @@ tc_policies:
         comment: Policy for evaluating statistical DDoS classifier.
         rule_set: tc_ruleset_1
         port_set: all_access_ports
-        mode: active
+        mode: passive
 #
 tc_rules:
     # Traffic Classification Rulesets and Rules
     tc_ruleset_1:
-        - comment: DDoS Detection using Random Forest
+        - comment: DDoS Detection using K Nearest Neighbours
           match_type: any
           conditions_list:
               - match_type: any
-                statistical: "ml_ddos_random_forest"
+                statistical: "ml_ddos_svm_rbf"
           actions:
             set_qos: classifier_return
             set_desc: description="Detection of DDoS attack traffic."

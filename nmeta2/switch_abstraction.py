@@ -33,6 +33,8 @@ from ryu.lib.mac import haddr_to_bin
 from ryu.lib import addrconv
 from ryu.ofproto import ofproto_v1_0
 from ryu.ofproto import ofproto_v1_3
+from ryu.lib.packet import ether_types
+from ryu.lib.packet import in_proto
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4, ipv6
@@ -613,13 +615,21 @@ class FlowTables(object):
         from a DPAE. Install an FE to switch for each direction
         of the flow applying the appropriate treatment.
         .
-        Only supports IPv4 and TCP at this stage.
+        Only supports IPv4 and TCP and UDP at this stage.
         .
         """
         ofproto = self.datapath.ofproto
         parser = self.datapath.ofproto_parser
-        #*** Check it's TCP:
-        if flow_dict['proto'] != 'tcp':
+        # Check for ICMP, we know that the DPAE tracks it but we don't
+        # want to treat it yet. Print a message that won't freak out
+        # the reader.
+        if flow_dict["proto"] == "icmp":
+            self.logger.info("ICMP proto detected, this is not "
+                             "currently treated.")
+            return 0
+        #*** Check it's either TCP of UDP:
+        if not (flow_dict['proto'] == 'tcp' or flow_dict['proto'] ==
+                'udp'):
             self.logger.error("Unsupported proto=%s", flow_dict['proto'])
             return 0
 
@@ -628,13 +638,12 @@ class FlowTables(object):
         ipv4_dst = _ipv4_t2i(str(flow_dict['ip_B']))
 
         #*** Build match:
-        match = parser.OFPMatch(eth_type=0x0800,
-                    ipv4_src=ipv4_src,
-                    ipv4_dst=ipv4_dst,
-                    ip_proto=6,
-                    tcp_src=flow_dict['tp_A'],
-                    tcp_dst=flow_dict['tp_B']
-                    )
+        match = self._create_match(parser, ipv4_src, ipv4_dst,
+                                   flow_dict["proto"], flow_dict[
+                                       "tp_A"], flow_dict["tp_B"])
+        if not match:
+            self.logger.debug("OF match condition not created.")
+            return 0
 
         #*** Set QoS actions (if any):
         queue = 0
@@ -663,13 +672,12 @@ class FlowTables(object):
                                     self.dpid)
         self.datapath.send_msg(mod)
         #*** Build counter match (reversed flow):
-        match = parser.OFPMatch(eth_type=0x0800,
-                    ipv4_src=ipv4_dst,
-                    ipv4_dst=ipv4_src,
-                    ip_proto=6,
-                    tcp_src=flow_dict['tp_B'],
-                    tcp_dst=flow_dict['tp_A']
-                    )
+        match = self._create_match(parser, ipv4_dst, ipv4_src,
+                                   flow_dict["proto"], flow_dict[
+                                       "tp_B"], flow_dict["tp_A"])
+        if not match:
+            self.logger.debug("OF match condition not created.")
+            return 0
         mod = parser.OFPFlowMod(datapath=self.datapath, table_id=self.ft_tt,
                             priority=priority,
                             idle_timeout=self.fe_idle_timeout_qos,
@@ -1270,6 +1278,59 @@ class FlowTables(object):
                 self.dpid, exc_type, exc_value, exc_traceback)
             return 0
         return 1
+
+    def _create_match(self, parser, ip_src, ip_dst, proto, port_src,
+                      port_dst, ipv4=True):
+        """Create an OpenFlow match condition.
+
+        :param parser: OpenFlow parser for creating the match.
+        :param ip_src: IP source address.
+        :param ip_dst: IP destination address.
+        :param proto: Transport protocol as a string.
+        :param port_src: Source port number.
+        :param port_dst: Destation port number.
+        :param ipv4: True if IPv4, False if IPv6.
+        :return: A match condition if successful, False otherwise.
+        """
+        # Perform a transport protocol check early on, just in case!
+        if not (proto == "tcp" or proto == "udp"):
+            self.logger.error("Unsupported protocol for OF match: "
+                              "%s. Expected 'tcp' or 'udp'.", proto)
+            return False
+        if ipv4:
+            if proto == "tcp":
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                        ipv4_src=ip_src,
+                                        ipv4_dst=ip_dst,
+                                        ip_proto=in_proto.IPPROTO_TCP,
+                                        tcp_src=port_src,
+                                        tcp_dst=port_dst)
+            else:
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                        ipv4_src=ip_src,
+                                        ipv4_dst=ip_dst,
+                                        ip_proto=in_proto.IPPROTO_UDP,
+                                        udp_src=port_src,
+                                        udp_dst=port_dst)
+        else:
+            if proto == "tcp":
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IPV6,
+                    ipv6_src=ip_src,
+                    ipv6_dst=ip_dst,
+                    ip_proto=in_proto.IPPROTO_TCP,
+                    tcp_src=port_src,
+                    tcp_dst=port_dst)
+            else:
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IPV6,
+                    ipv6_src=ip_src,
+                    ipv6_dst=ip_dst,
+                    ip_proto=in_proto.IPPROTO_UDP,
+                    udp_src=port_src,
+                    udp_dst=port_dst)
+        return match
+
 
 #=============== Private functions:
 
